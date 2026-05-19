@@ -15,7 +15,7 @@ from app.api.notification import (
 )
 
 app=FastAPI(
-    title="SyncSpace API",
+    title="SyncSphere API",
     version="1.0.0"
 )
 
