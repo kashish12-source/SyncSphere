@@ -64,6 +64,35 @@ export const updateTaskStatus = async (
       }
     }
   )
+  
 
   return response.data
+}
+export const assignTask =
+  async (
+
+    token,
+    taskId,
+    assignedTo
+
+  ) => {
+
+    const response = await api.put(
+
+      `/tasks/${taskId}/assign`,
+
+      {
+        assigned_to:
+          assignedTo
+      },
+
+      {
+        headers: {
+          Authorization:
+            `Bearer ${token}`
+        }
+      }
+    )
+
+    return response.data
 }

@@ -1,11 +1,14 @@
 export const connectWorkspaceSocket = (
+
   workspaceId,
+  userId,
   onMessage
+
 ) => {
 
   const socket = new WebSocket(
 
-    `ws://127.0.0.1:8000/ws/${workspaceId}`
+    `ws://127.0.0.1:8000/ws/${workspaceId}/${userId}`
   )
 
   socket.onopen = () => {
@@ -36,7 +39,7 @@ export const connectWorkspaceSocket = (
 
 
 
-// PERSONAL NOTIFICATION SOCKET
+// NOTIFICATION SOCKET
 export const connectNotificationSocket = (
   userId,
   onMessage

@@ -1,14 +1,26 @@
-from sqlalchemy import Column, Integer, String, ForeignKey
-from sqlalchemy.orm import relationship
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    ForeignKey
+)
+
+from sqlalchemy.orm import (
+    relationship
+)
 
 from app.db.database import Base
 
 
 class WorkspaceMember(Base):
 
-    __tablename__ = "workspace_members"
+    __tablename__ ="workspace_members"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
 
     workspace_id = Column(
         Integer,
@@ -25,6 +37,8 @@ class WorkspaceMember(Base):
         default="member"
     )
 
+
+    # RELATIONSHIPS
     workspace = relationship(
         "Workspace",
         back_populates="members"
@@ -32,5 +46,5 @@ class WorkspaceMember(Base):
 
     user = relationship(
         "User",
-        back_populates="workspaces"
+        back_populates="memberships"
     )

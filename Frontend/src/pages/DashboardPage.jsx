@@ -130,22 +130,53 @@ function DashboardPage() {
 
   return (
 
-    <div className="min-h-screen bg-gray-100 flex">
+    <div className="
+      min-h-screen
+      bg-linear-to-br
+      from-slate-100
+      via-blue-100
+      to-indigo-200
+      flex
+    ">
 
       {/* SIDEBAR */}
-      <div className="w-[250px] bg-white shadow-lg p-6">
+      <div className="
+        w-[260px]
+        bg-white/40
+        backdrop-blur-lg
+        border-r
+        border-white/20
+        shadow-xl
+        p-6
+      ">
 
-        <h1 className="text-3xl font-bold text-blue-600 mb-10">
+        <h1 className="
+          text-4xl
+          font-extrabold
+          text-blue-700
+          mb-10
+        ">
 
-          SyncSpace
+          SyncSphere
 
         </h1>
+
 
         <button
           onClick={() =>
             setShowModal(true)
           }
-          className="w-full bg-blue-600 text-white p-3 rounded-xl"
+          className="
+            w-full
+            bg-blue-600
+            hover:bg-blue-700
+            text-white
+            p-4
+            rounded-2xl
+            font-semibold
+            shadow-lg
+            transition
+          "
         >
           + Create Workspace
         </button>
@@ -157,21 +188,59 @@ function DashboardPage() {
       <div className="flex-1">
 
         {/* NAVBAR */}
-        <div className="bg-white shadow p-4 flex justify-between items-center">
+        <div className="
+          bg-white/50
+          backdrop-blur-lg
+          border-b
+          border-white/20
+          shadow-md
+          p-5
+          flex
+          justify-between
+          items-center
+        ">
 
-          <h2 className="text-2xl font-bold">
+          <div>
 
-            Dashboard
+            <h2 className="
+              text-3xl
+              font-extrabold
+              text-blue-700
+            ">
 
-          </h2>
+              Dashboard
 
-          <div className="flex items-center gap-4">
+            </h2>
+
+            <p className="text-gray-600 mt-1">
+
+              Real-time collaboration platform
+
+            </p>
+
+          </div>
+
+
+          <div className="
+            flex
+            items-center
+            gap-5
+          ">
 
             {/* NOTIFICATIONS */}
             <div className="relative">
 
               <button
-                className="bg-yellow-400 px-4 py-2 rounded font-semibold"
+                className="
+                  bg-yellow-400
+                  hover:bg-yellow-500
+                  px-5
+                  py-3
+                  rounded-2xl
+                  font-semibold
+                  shadow-md
+                  transition
+                "
               >
                 Notifications
                 {" "}
@@ -180,17 +249,37 @@ function DashboardPage() {
 
             </div>
 
+
             {/* USER */}
-            <span className="font-semibold">
+            <div className="
+              bg-white/60
+              backdrop-blur-md
+              px-4
+              py-2
+              rounded-2xl
+              shadow
+              font-semibold
+            ">
 
               {user?.name}
 
-            </span>
+            </div>
+
 
             {/* LOGOUT */}
             <button
               onClick={logout}
-              className="bg-red-500 text-white px-4 py-2 rounded"
+              className="
+                bg-red-500
+                hover:bg-red-600
+                text-white
+                px-5
+                py-3
+                rounded-2xl
+                font-semibold
+                shadow-lg
+                transition
+              "
             >
               Logout
             </button>
@@ -203,13 +292,50 @@ function DashboardPage() {
         {/* WORKSPACES */}
         <div className="p-8">
 
-          <h2 className="text-3xl font-bold mb-6">
+          <div className="
+            flex
+            justify-between
+            items-center
+            mb-8
+          ">
 
-            Your Workspaces
+            <h2 className="
+              text-4xl
+              font-extrabold
+              text-gray-800
+            ">
 
-          </h2>
+              Your Workspaces
 
-          <div className="grid grid-cols-3 gap-6">
+            </h2>
+
+            <div className="
+              bg-white/60
+              backdrop-blur-md
+              px-5
+              py-2
+              rounded-2xl
+              shadow
+              font-semibold
+            ">
+
+              {workspaces.length}
+              {" "}
+              Workspace(s)
+
+            </div>
+
+          </div>
+
+
+          {/* WORKSPACE GRID */}
+          <div className="
+            grid
+            grid-cols-1
+            md:grid-cols-2
+            xl:grid-cols-3
+            gap-8
+          ">
 
             {workspaces?.map((workspace) => (
 

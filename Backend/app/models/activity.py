@@ -12,9 +12,9 @@ from sqlalchemy.orm import (
 from app.db.database import Base
 
 
-class Task(Base):
+class Activity(Base):
 
-    __tablename__ = "tasks"
+    __tablename__ = "activities"
 
     id = Column(
         Integer,
@@ -22,28 +22,18 @@ class Task(Base):
         index=True
     )
 
-    title = Column(String)
-
-    description = Column(String)
-
-    priority = Column(String)
-
-    status = Column(String)
-
     workspace_id = Column(
         Integer,
         ForeignKey("workspaces.id")
     )
 
-    assigned_to = Column(
-        Integer,
-        ForeignKey("users.id"),
-        nullable=True
-    )
+    user_id = Column(Integer)
+
+    action = Column(String)
 
 
     # RELATIONSHIP
     workspace = relationship(
         "Workspace",
-        back_populates="tasks"
+        back_populates="activities"
     )

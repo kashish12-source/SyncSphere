@@ -7,76 +7,46 @@ import {
 import api from "../api/axios"
 
 
-export const AuthContext = createContext()
+export const AuthContext =
+  createContext()
 
 
-function AuthProvider({ children }) {
+function AuthProvider({
 
-  const [token, setToken] = useState(
+  children
 
-    localStorage.getItem("token")
-  )
+}) {
 
-  const [user, setUser] = useState(null)
+  const [token, setToken] =
+    useState(
 
-  const [loading, setLoading] = useState(true)
+      localStorage.getItem(
+        "token"
+      ) || null
+    )
 
-
-  // FETCH CURRENT USER
-  const fetchCurrentUser = async () => {
-
-    if (!token) {
-
-      setLoading(false)
-
-      return
-    }
-
-    try {
-
-      const response = await api.get(
-        "/auth/me",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      )
-
-      setUser(response.data)
-
-    } catch (error) {
-
-      console.log(error)
-
-      logout()
-    }
-
-    setLoading(false)
-  }
+  const [user, setUser] =
+    useState(null)
 
 
-  useEffect(() => {
-
-    fetchCurrentUser()
-
-  }, [token])
-
-
-  const login = (jwtToken) => {
+  // LOGIN
+  const login = (newToken) => {
 
     localStorage.setItem(
       "token",
-      jwtToken
+      newToken
     )
 
-    setToken(jwtToken)
+    setToken(newToken)
   }
 
 
+  // LOGOUT
   const logout = () => {
 
-    localStorage.removeItem("token")
+    localStorage.removeItem(
+      "token"
+    )
 
     setToken(null)
 
@@ -84,14 +54,63 @@ function AuthProvider({ children }) {
   }
 
 
+  // LOAD USER
+  useEffect(() => {
+
+    const loadUser =
+      async () => {
+
+        if (!token) return
+
+        try {
+
+          const response =
+            await api.get(
+
+              "/auth/me",
+
+              {
+                headers: {
+
+                  Authorization:
+                    `Bearer ${token}`
+                }
+              }
+            )
+
+          setUser(
+            response.data
+          )
+          localStorage.setItem(
+  "user_name",
+  response.data.name
+)
+
+        } catch (error) {
+
+          console.log(error)
+
+          logout()
+        }
+      }
+
+    loadUser()
+
+  }, [token])
+
+
   return (
 
     <AuthContext.Provider
+
       value={{
+
         token,
+
         user,
-        loading,
+
         login,
+
         logout
       }}
     >

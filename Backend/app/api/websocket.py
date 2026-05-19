@@ -4,21 +4,24 @@ from fastapi import (
     WebSocketDisconnect
 )
 
-from app.websocket.manager import manager
+from app.websocket.manager import (
+    manager
+)
 
 
 router = APIRouter()
 
 
-# WORKSPACE WEBSOCKET
-@router.websocket("/ws/{workspace_id}")
+@router.websocket("/ws/{workspace_id}/{user_id}")
 async def websocket_endpoint(
     websocket: WebSocket,
-    workspace_id: int
+    workspace_id: int,
+    user_id: int
 ):
 
     await manager.connect(
         workspace_id,
+        user_id,
         websocket
     )
 
@@ -28,40 +31,26 @@ async def websocket_endpoint(
 
             data = await websocket.receive_text()
 
-            await manager.broadcast_to_workspace(
-                workspace_id,
-                {
-                    "workspace_id": workspace_id,
-                    "message": data
-                }
-            )
+            ## TYPING EVENT
+        if data["event"] == "typing":
 
-    except WebSocketDisconnect:
+            await manager.broadcast_typing(
 
-        manager.disconnect(
             workspace_id,
-            websocket
-        )
 
+        {
+            "event":
+            "typing",
 
-# USER PERSONAL WEBSOCKET
-@router.websocket("/ws/user/{user_id}")
-async def user_websocket(
-    websocket: WebSocket,
-    user_id: int
-):
-
-    await manager.connect_user(
-        user_id,
-        websocket
+            "user":
+            data["user"]
+        }
     )
 
-    try:
-
-        while True:
-
-            await websocket.receive_text()
-
     except WebSocketDisconnect:
 
-        pass
+        await manager.disconnect(
+            workspace_id,
+            user_id,
+            websocket
+        )

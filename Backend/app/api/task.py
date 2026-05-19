@@ -5,21 +5,32 @@ from fastapi import (
 )
 
 from sqlalchemy.orm import Session
-from app.models.notification import Notification
 
-from app.db.session import get_db
-
-from app.models.task import Task
-from app.models.workspace_member import WorkspaceMember
-from app.models.user import User
-from app.websocket.manager import manager
-
-from app.schemas.task_schema import (
-    TaskCreate,
-    TaskUpdate
+from app.db.database import (
+    get_db
 )
 
-from app.auth.oauth2 import get_current_user
+from app.models.task import (
+    Task
+)
+
+from app.schemas.task import (
+    TaskCreate,
+    TaskStatusUpdate,
+    TaskAssign
+)
+
+from app.auth.jwt_handler import (
+    get_current_user
+)
+
+from app.websocket.manager import (
+    manager
+)
+
+from app.utils.activity_logger import (
+    log_activity
+)
 
 
 router = APIRouter(
@@ -31,205 +42,278 @@ router = APIRouter(
 # CREATE TASK
 @router.post("/create")
 async def create_task(
+
     task: TaskCreate,
+
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+
+    current_user = Depends(
+        get_current_user
+    )
 ):
 
-    # CHECK USER BELONGS TO WORKSPACE
-    membership = db.query(
-        WorkspaceMember
-    ).filter(
-        WorkspaceMember.workspace_id == task.workspace_id,
-        WorkspaceMember.user_id == current_user.id
-    ).first()
-
-    if not membership:
-        raise HTTPException(
-            status_code=403,
-            detail="Access denied"
-        )
-
     new_task = Task(
+
         title=task.title,
+
         description=task.description,
+
         priority=task.priority,
-        deadline=task.deadline,
+
+        status="todo",
+
         workspace_id=task.workspace_id,
-        assigned_to=task.assigned_to,
-        created_by=current_user.id
+
+        assigned_to=task.assigned_to
     )
 
     db.add(new_task)
+
     db.commit()
+
     db.refresh(new_task)
-    # CREATE NOTIFICATION
-    notification = Notification(
-        user_id=task.assigned_to,
-        message=f"You were assigned task: {task.title}"
+
+
+    # ACTIVITY LOG
+    await log_activity(
+
+        db,
+
+        new_task.workspace_id,
+
+        current_user.id,
+
+        f"{current_user.name} created task '{new_task.title}'"
     )
 
-    db.add(notification)
-    db.commit()
-    await manager.send_personal_message(
-        task.assigned_to,
+
+    # WEBSOCKET EVENT
+    await manager.broadcast(
+
+        new_task.workspace_id,
+
         {
-            "event": "notification",
-            "message": f"You were assigned task: {task.title}"
-        }
-    )
-    await manager.broadcast_to_workspace(
-        task.workspace_id,
-        {
-            "event": "task_created",
-            "task": {
-                "id": new_task.id,
-                "title": new_task.title,
-                "description": new_task.description,
-                "priority": new_task.priority,
-                "status": new_task.status,
-                "workspace_id": new_task.workspace_id
-            }
+            "event":
+                "task_created",
+
+            "task":
+                {
+                    "id":
+                        new_task.id,
+
+                    "title":
+                        new_task.title,
+
+                    "description":
+                        new_task.description,
+
+                    "priority":
+                        new_task.priority,
+
+                    "status":
+                        new_task.status,
+
+                    "workspace_id":
+                        new_task.workspace_id,
+
+                    "assigned_to":
+                        new_task.assigned_to
+                }
         }
     )
 
-    return {
-        "message": "Task created successfully",
-        "task_id": new_task.id
-    }
+    return new_task
 
 
 # GET WORKSPACE TASKS
 @router.get("/{workspace_id}")
 def get_workspace_tasks(
+
     workspace_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+
+    db: Session = Depends(get_db)
 ):
 
-    membership = db.query(
-        WorkspaceMember
+    tasks = db.query(
+        Task
     ).filter(
-        WorkspaceMember.workspace_id == workspace_id,
-        WorkspaceMember.user_id == current_user.id
-    ).first()
 
-    if not membership:
-        raise HTTPException(
-            status_code=403,
-            detail="Access denied"
-        )
+        Task.workspace_id
+        == workspace_id
 
-    tasks = db.query(Task).filter(
-        Task.workspace_id == workspace_id
     ).all()
 
     return tasks
 
 
-# UPDATE TASK
-@router.put("/{task_id}")
-async def update_task(
+# UPDATE TASK STATUS
+@router.put("/{task_id}/status")
+async def update_task_status(
+
     task_id: int,
-    task_update: TaskUpdate,
+
+    task_update: TaskStatusUpdate,
+
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+
+    current_user = Depends(
+        get_current_user
+    )
 ):
 
-    task = db.query(Task).filter(
+    task = db.query(
+        Task
+    ).filter(
+
         Task.id == task_id
+
     ).first()
 
+
     if not task:
+
         raise HTTPException(
+
             status_code=404,
+
             detail="Task not found"
         )
 
-    membership = db.query(
-        WorkspaceMember
-    ).filter(
-        WorkspaceMember.workspace_id == task.workspace_id,
-        WorkspaceMember.user_id == current_user.id
-    ).first()
 
-    if not membership:
-        raise HTTPException(
-            status_code=403,
-            detail="Access denied"
-        )
-
-    update_data = task_update.dict(
-        exclude_unset=True
-    )
-
-    for key, value in update_data.items():
-        setattr(task, key, value)
+    # UPDATE STATUS
+    task.status = task_update.status
 
     db.commit()
+
     db.refresh(task)
 
-    await manager.broadcast_to_workspace(
+
+    # ACTIVITY LOG
+    await log_activity(
+
+        db,
+
         task.workspace_id,
+
+        current_user.id,
+
+        f"{current_user.name} moved '{task.title}' to {task.status}"
+    )
+
+
+    # WEBSOCKET EVENT
+    await manager.broadcast(
+
+        task.workspace_id,
+
         {
-            "event": "task_updated",
-            "task": {
-                "id": task.id,
-                "title": task.title,
-                "status": task.status,
-                "priority": task.priority
-            }
+            "event":
+                "task_updated",
+
+            "task":
+                {
+                    "id":
+                        task.id,
+
+                    "title":
+                        task.title,
+
+                    "description":
+                        task.description,
+
+                    "priority":
+                        task.priority,
+
+                    "status":
+                        task.status,
+
+                    "workspace_id":
+                        task.workspace_id,
+
+                    "assigned_to":
+                        task.assigned_to
+                }
         }
     )
 
-    return {
-        "message": "Task updated successfully"
-    }
+    return task
 
 
-# DELETE TASK
-@router.delete("/{task_id}")
-async def delete_task(
+# ASSIGN TASK
+@router.put("/{task_id}/assign")
+async def assign_task(
+
     task_id: int,
+
+    task_assign: TaskAssign,
+
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+
+    current_user = Depends(
+        get_current_user
+    )
 ):
 
-    task = db.query(Task).filter(
+    task = db.query(
+        Task
+    ).filter(
+
         Task.id == task_id
+
     ).first()
 
+
     if not task:
+
         raise HTTPException(
+
             status_code=404,
+
             detail="Task not found"
         )
 
-    membership = db.query(
-        WorkspaceMember
-    ).filter(
-        WorkspaceMember.workspace_id == task.workspace_id,
-        WorkspaceMember.user_id == current_user.id
-    ).first()
 
-    if not membership:
-        raise HTTPException(
-            status_code=403,
-            detail="Access denied"
-        )
-    workspace_id = task.workspace_id
-    task_id = task.id
+    # ASSIGN USER
+    task.assigned_to = (
+        task_assign.assigned_to
+    )
 
-    db.delete(task)
     db.commit()
-    await manager.broadcast_to_workspace(
-        workspace_id,
+
+    db.refresh(task)
+
+
+    # ACTIVITY LOG
+    await log_activity(
+
+        db,
+
+        task.workspace_id,
+
+        current_user.id,
+
+        f"{current_user.name} assigned task '{task.title}'"
+    )
+
+
+    # WEBSOCKET EVENT
+    await manager.broadcast(
+
+        task.workspace_id,
+
         {
-            "event": "task_deleted",
-            "task_id": task_id
+            "event":
+                "task_assigned",
+
+            "task":
+                {
+                    "id":
+                        task.id,
+
+                    "assigned_to":
+                        task.assigned_to
+                }
         }
     )
 
-    return {
-        "message": "Task deleted successfully"
-    }
+    return task

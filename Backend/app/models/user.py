@@ -1,5 +1,12 @@
-from sqlalchemy import Column, Integer, String
-from sqlalchemy.orm import relationship
+from sqlalchemy import (
+    Column,
+    Integer,
+    String
+)
+
+from sqlalchemy.orm import (
+    relationship
+)
 
 from app.db.database import Base
 
@@ -8,15 +15,32 @@ class User(Base):
 
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
 
-    name = Column(String, nullable=False)
+    name = Column(
+        String,
+        nullable=False
+    )
 
-    email = Column(String, unique=True, nullable=False)
+    email = Column(
+        String,
+        unique=True,
+        nullable=False
+    )
 
-    password = Column(String, nullable=False)
+    password = Column(
+        String,
+        nullable=False
+    )
 
-    workspaces = relationship(
+
+    # RELATIONSHIPS
+    memberships = relationship(
         "WorkspaceMember",
-        back_populates="user"
+        back_populates="user",
+        cascade="all, delete"
     )

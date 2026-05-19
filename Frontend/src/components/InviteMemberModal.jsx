@@ -1,32 +1,26 @@
+
 import {
   useState
 } from "react"
 
 
-function CreateWorkspaceModal({
+function InviteMemberModal({
 
   onClose,
-  onCreate
+  onInvite
 
 }) {
 
-  const [name, setName] =
+  const [email, setEmail] =
     useState("")
-
-  const [
-    description,
-    setDescription
-  ] = useState("")
 
 
   const handleSubmit = (e) => {
 
     e.preventDefault()
 
-    onCreate({
-
-      name,
-      description
+    onInvite({
+      email
     })
   }
 
@@ -57,28 +51,26 @@ function CreateWorkspaceModal({
           mb-6
         ">
 
-          Create Workspace
+          Invite Member
 
         </h2>
 
 
         <form
           onSubmit={handleSubmit}
-          className="
-            space-y-4
-          "
+          className="space-y-4"
         >
 
           <input
 
-            type="text"
+            type="email"
 
-            placeholder="Workspace Name"
+            placeholder="User Email"
 
-            value={name}
+            value={email}
 
             onChange={(e) =>
-              setName(
+              setEmail(
                 e.target.value
               )
             }
@@ -91,28 +83,6 @@ function CreateWorkspaceModal({
             "
 
             required
-          />
-
-
-          <textarea
-
-            placeholder="Description"
-
-            value={description}
-
-            onChange={(e) =>
-              setDescription(
-                e.target.value
-              )
-            }
-
-            className="
-              w-full
-              border
-              p-3
-              rounded-xl
-              h-28
-            "
           />
 
 
@@ -154,7 +124,7 @@ function CreateWorkspaceModal({
               "
             >
 
-              Create
+              Invite
 
             </button>
 
@@ -168,4 +138,4 @@ function CreateWorkspaceModal({
   )
 }
 
-export default CreateWorkspaceModal
+export default InviteMemberModal

@@ -1,42 +1,109 @@
 import api from "./axios"
 
 
-export const getMyWorkspaces = async (
-  token
-) => {
+// GET MY WORKSPACES
+export const getMyWorkspaces =
+  async (token) => {
 
-  const response = await api.get(
+    const response = await api.get(
 
-    "/workspace/my-workspaces",
+      "/workspace/my-workspaces",
 
-    {
-      headers: {
-        Authorization: `Bearer ${token}`
+      {
+        headers: {
+
+          Authorization:
+            `Bearer ${token}`
+        }
       }
-    }
-  )
+    )
 
-  return response.data
+    return response.data
 }
 
 
-export const createWorkspace = async (
-  token,
-  workspaceData
-) => {
+// CREATE WORKSPACE
+export const createWorkspace =
+  async (
 
-  const response = await api.post(
+    token,
 
-    "/workspace/create",
+    workspaceData
 
-    workspaceData,
+  ) => {
 
-    {
-      headers: {
-        Authorization: `Bearer ${token}`
+    const response = await api.post(
+
+      "/workspace/create",
+
+      workspaceData,
+
+      {
+        headers: {
+
+          Authorization:
+            `Bearer ${token}`
+        }
       }
-    }
-  )
+    )
 
-  return response.data
+    return response.data
+}
+
+
+// GET MEMBERS
+export const getWorkspaceMembers =
+  async (
+
+    token,
+
+    workspaceId
+
+  ) => {
+
+    const response = await api.get(
+
+      `/workspace/${workspaceId}/members`,
+
+      {
+        headers: {
+
+          Authorization:
+            `Bearer ${token}`
+        }
+      }
+    )
+
+    return response.data
+}
+
+
+// ADD MEMBER
+export const addWorkspaceMember =
+  async (
+
+    token,
+
+    workspaceId,
+
+    memberData
+
+  ) => {
+
+    const response = await api.post(
+
+      `/workspace/${workspaceId}/add-member`,
+
+      memberData,
+
+      {
+        headers: {
+
+          Authorization:
+            `Bearer ${token}`
+        }
+      }
+    )
+
+    return response.data
 }

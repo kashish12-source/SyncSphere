@@ -26,6 +26,14 @@ import CreateTaskModal from "../components/CreateTaskModal.jsx"
 
 import KanbanColumn from "../components/KanbanColumn.jsx"
 
+import ActivityPanel from "../components/ActivityPanel.jsx"
+
+import OnlineMembers from "../components/OnlineMembers.jsx"
+
+import MembersPanel from "../components/MembersPanel.jsx"
+
+import ChatPanel from "../components/ChatPanel.jsx"
+
 import {
   connectWorkspaceSocket
 } from "../websocket/socket"
@@ -33,37 +41,50 @@ import {
 
 function WorkspacePage() {
 
-  const { workspaceId } = useParams()
+  const { workspaceId } =
+    useParams()
 
   const {
-    token
+    token,
+    user
   } = useContext(AuthContext)
 
+
+  // STATES
   const [tasks, setTasks] =
     useState([])
 
   const [showModal, setShowModal] =
     useState(false)
 
+  const [onlineUsers, setOnlineUsers] =
+    useState([])
+
+  const [socket, setSocket] =
+    useState(null)
+
 
   // FETCH TASKS
-  const fetchTasks = async () => {
+  const fetchTasks =
+    async () => {
 
-    try {
+      try {
 
-      const data =
-        await getWorkspaceTasks(
-          token,
-          workspaceId
-        )
+        const data =
+          await getWorkspaceTasks(
 
-      setTasks(data)
+            token,
 
-    } catch (error) {
+            workspaceId
+          )
 
-      console.log(error)
+        setTasks(data)
+
+      } catch (error) {
+
+        console.log(error)
+      }
     }
-  }
 
 
   // INITIAL LOAD
@@ -77,10 +98,15 @@ function WorkspacePage() {
   // WEBSOCKET
   useEffect(() => {
 
+    if (!user) return
+
+
     const ws =
       connectWorkspaceSocket(
 
         workspaceId,
+
+        user.name,
 
         (data) => {
 
@@ -88,6 +114,19 @@ function WorkspacePage() {
             "Live Event:",
             data
           )
+
+
+          // ONLINE USERS
+          if (
+            data.event ===
+            "online_users"
+          ) {
+
+            setOnlineUsers(
+              data.users
+            )
+          }
+
 
           // TASK CREATED
           if (
@@ -102,6 +141,7 @@ function WorkspacePage() {
               data.task
             ])
           }
+
 
           // TASK UPDATED
           if (
@@ -126,6 +166,33 @@ function WorkspacePage() {
             )
           }
 
+
+          // TASK ASSIGNED
+          if (
+            data.event ===
+            "task_assigned"
+          ) {
+
+            setTasks((prev) =>
+
+              prev.map((task) =>
+
+                task.id ===
+                data.task.id
+
+                  ? {
+                      ...task,
+
+                      assigned_to:
+                        data.task.assigned_to
+                    }
+
+                  : task
+              )
+            )
+          }
+
+
           // TASK DELETED
           if (
             data.event ===
@@ -146,12 +213,14 @@ function WorkspacePage() {
         }
       )
 
+    setSocket(ws)
+
     return () => {
 
       ws.close()
     }
 
-  }, [])
+  }, [user])
 
 
   // CREATE TASK
@@ -161,7 +230,9 @@ function WorkspacePage() {
       try {
 
         await createTask(
+
           token,
+
           {
             ...taskData,
 
@@ -199,7 +270,7 @@ function WorkspacePage() {
 
       try {
 
-        // UPDATE FRONTEND
+        // FRONTEND UPDATE
         setTasks((prev) =>
 
           prev.map((task) =>
@@ -215,10 +286,13 @@ function WorkspacePage() {
           )
         )
 
-        // UPDATE BACKEND
+        // BACKEND UPDATE
         await updateTaskStatus(
+
           token,
+
           taskId,
+
           newStatus
         )
 
@@ -256,74 +330,199 @@ function WorkspacePage() {
 
   return (
 
-    <div className="min-h-screen bg-gray-100">
+    <div className="
+      min-h-screen
+      bg-linear-to-br
+      from-slate-100
+      via-blue-100
+      to-indigo-200
+    ">
 
       {/* NAVBAR */}
-      <div className="bg-white shadow p-4 flex justify-between items-center">
+      <div className="
+        bg-white/50
+        backdrop-blur-lg
+        border-b
+        border-white/20
+        shadow-md
+        p-5
+        flex
+        justify-between
+        items-center
+      ">
 
-        <h1 className="text-2xl font-bold text-blue-600">
+        <div>
 
-          Workspace
-          {" "}
-          {workspaceId}
+          <h1 className="
+            text-3xl
+            font-extrabold
+            text-blue-700
+          ">
 
-        </h1>
+            Workspace
+            {" "}
+            {workspaceId}
+
+          </h1>
+
+          <p className="
+            text-gray-600
+            mt-1
+          ">
+
+            Real-time collaboration board
+
+          </p>
+
+        </div>
+
 
         <button
+
           onClick={() =>
             setShowModal(true)
           }
-          className="bg-blue-600 text-white px-4 py-2 rounded"
+
+          className="
+            bg-blue-600
+            hover:bg-blue-700
+            text-white
+            px-5
+            py-3
+            rounded-2xl
+            font-semibold
+            shadow-lg
+            transition
+          "
         >
+
           + Create Task
+
         </button>
 
       </div>
 
 
-      {/* DRAG CONTEXT */}
-      <DndContext
-        onDragEnd={
-          handleDragEnd
-        }
-      >
+      {/* MAIN LAYOUT */}
+      <div className="
+        p-8
+        grid
+        grid-cols-1
+        xl:grid-cols-4
+        gap-8
+      ">
 
-        {/* KANBAN */}
-        <div className="p-8 grid grid-cols-3 gap-6">
+        {/* LEFT SIDE */}
+        <div className="
+          xl:col-span-3
+          space-y-8
+        ">
 
-          <KanbanColumn
-            title="Todo"
-            tasks={todoTasks}
-            columnId="todo"
-          />
+          {/* TASK BOARD */}
+          <DndContext
+            onDragEnd={
+              handleDragEnd
+            }
+          >
 
-          <KanbanColumn
-            title="In Progress"
-            tasks={progressTasks}
-            columnId="in_progress"
-          />
+            <div className="
+              grid
+              grid-cols-1
+              md:grid-cols-2
+              xl:grid-cols-3
+              gap-8
+            ">
 
-          <KanbanColumn
-            title="Done"
-            tasks={doneTasks}
-            columnId="done"
+              <KanbanColumn
+                title="Todo"
+                tasks={todoTasks}
+                columnId="todo"
+                socket={socket}
+              />
+
+              <KanbanColumn
+                title="In Progress"
+                tasks={progressTasks}
+                columnId="in_progress"
+                socket={socket}
+              />
+
+              <KanbanColumn
+                title="Done"
+                tasks={doneTasks}
+                columnId="done"
+                socket={socket}
+              />
+
+            </div>
+
+          </DndContext>
+
+
+          {/* CHAT PANEL */}
+          <ChatPanel
+
+            workspaceId={
+              workspaceId
+               
+            }
+            socket={socket}
+
           />
 
         </div>
 
-      </DndContext>
+
+        {/* RIGHT SIDEBAR */}
+        <div className="
+          space-y-6
+        ">
+
+          {/* ONLINE USERS */}
+          <OnlineMembers
+            users={onlineUsers}
+          />
+
+
+          {/* MEMBERS */}
+          <MembersPanel
+
+            workspaceId={
+              workspaceId
+            }
+
+          />
+
+
+          {/* ACTIVITY */}
+          <ActivityPanel
+
+            workspaceId={
+              workspaceId
+            }
+
+            socket={socket}
+
+          />
+
+        </div>
+
+      </div>
 
 
       {/* MODAL */}
       {showModal && (
 
         <CreateTaskModal
+
           onClose={() =>
             setShowModal(false)
           }
+
           onCreate={
             handleCreateTask
           }
+
         />
 
       )}
