@@ -1,15 +1,67 @@
 import {
   createContext,
-  useState
+  useState,
+  useEffect
 } from "react"
 
+import api from "../api/axios"
+
+
 export const AuthContext = createContext()
+
 
 function AuthProvider({ children }) {
 
   const [token, setToken] = useState(
+
     localStorage.getItem("token")
   )
+
+  const [user, setUser] = useState(null)
+
+  const [loading, setLoading] = useState(true)
+
+
+  // FETCH CURRENT USER
+  const fetchCurrentUser = async () => {
+
+    if (!token) {
+
+      setLoading(false)
+
+      return
+    }
+
+    try {
+
+      const response = await api.get(
+        "/auth/me",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      )
+
+      setUser(response.data)
+
+    } catch (error) {
+
+      console.log(error)
+
+      logout()
+    }
+
+    setLoading(false)
+  }
+
+
+  useEffect(() => {
+
+    fetchCurrentUser()
+
+  }, [token])
+
 
   const login = (jwtToken) => {
 
@@ -21,18 +73,24 @@ function AuthProvider({ children }) {
     setToken(jwtToken)
   }
 
+
   const logout = () => {
 
     localStorage.removeItem("token")
 
     setToken(null)
+
+    setUser(null)
   }
+
 
   return (
 
     <AuthContext.Provider
       value={{
         token,
+        user,
+        loading,
         login,
         logout
       }}

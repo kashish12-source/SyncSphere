@@ -7,6 +7,10 @@ import {
 import LoginPage from "../pages/LoginPage"
 import RegisterPage from "../pages/RegisterPage"
 import DashboardPage from "../pages/DashboardPage"
+import WorkspacePage from "../pages/WorkspacePage"
+
+import ProtectedRoute from "./ProtectedRoute"
+
 
 function AppRoutes() {
 
@@ -28,7 +32,24 @@ function AppRoutes() {
 
         <Route
           path="/"
-          element={<DashboardPage />}
+          element={
+            <ProtectedRoute>
+
+              <DashboardPage />
+
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/workspace/:workspaceId"
+          element={
+            <ProtectedRoute>
+
+              <WorkspacePage />
+
+            </ProtectedRoute>
+          }
         />
 
       </Routes>

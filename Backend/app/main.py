@@ -10,6 +10,9 @@ from app.models.notification import Notification
 from app.api.task import router as task_router
 from app.api.auth import router as auth_route
 from app.api.workspace import router as workspace_router
+from fastapi import FastAPI
+
+from fastapi.middleware.cors import CORSMiddleware
 from app.api.notification import (
     router as notification_router
 )
@@ -17,6 +20,19 @@ from app.api.notification import (
 app=FastAPI(
     title="SyncSphere API",
     version="1.0.0"
+)
+app.add_middleware(
+    CORSMiddleware,
+
+    allow_origins=[
+        "http://localhost:5173"
+    ],
+
+    allow_credentials=True,
+
+    allow_methods=["*"],
+
+    allow_headers=["*"],
 )
 
 user.Base.metadata.create_all(bind=engine)
