@@ -1,83 +1,83 @@
 function UserAvatar({
 
-  name,
-  online = false,
-  size = "md"
+  user,
+  online = false
 
 }) {
 
-  // SIZE STYLES
-  const sizes = {
-
-    sm:
-      "w-8 h-8 text-sm",
-
-    md:
-      "w-10 h-10 text-base",
-
-    lg:
-      "w-14 h-14 text-lg"
-  }
+  if (!user) return null
 
 
   return (
 
     <div className="
-      relative
       flex
       items-center
-      justify-center
+      gap-2
     ">
 
       {/* AVATAR */}
-      <div
-        className={`
-          ${sizes[size]}
+      <div className="
+        relative
+      ">
 
+        <div className="
+          w-10
+          h-10
           rounded-full
-
-          bg-indigo-600
-
+          bg-blue-600
           text-white
-
-          font-bold
-
           flex
-
           items-center
-
           justify-center
-
+          font-bold
           shadow-md
-        `}
-      >
+        ">
 
-        {name
-          ?.charAt(0)
-          ?.toUpperCase()}
+          {user.name
+            ?.charAt(0)
+            ?.toUpperCase()}
+
+        </div>
+
+
+        {/* ONLINE DOT */}
+        {online && (
+
+          <div className="
+            absolute
+            bottom-0
+            right-0
+            w-3
+            h-3
+            bg-green-500
+            rounded-full
+            border-2
+            border-white
+          " />
+
+        )}
 
       </div>
 
 
-      {/* ONLINE DOT */}
-      {online && (
+      {/* NAME */}
+      <div>
 
-        <div className="
-          absolute
-          bottom-0
-          right-0
-          w-3
-          h-3
-          bg-green-500
-          border-2
-          border-white
-          rounded-full
-        " />
+        <p className="
+          text-sm
+          font-semibold
+          text-gray-800
+        ">
 
-      )}
+          {user.name}
+
+        </p>
+
+      </div>
 
     </div>
   )
 }
 
-export default UserAvatar   
+export default UserAvatar

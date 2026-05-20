@@ -1,7 +1,7 @@
 import {
+  useContext,
   useEffect,
-  useState,
-  useContext
+  useState
 } from "react"
 
 import {
@@ -9,7 +9,7 @@ import {
 } from "../context/AuthContext"
 
 import {
-  getActivities
+  getWorkspaceActivity
 } from "../api/activityApi"
 
 
@@ -24,19 +24,22 @@ function ActivityPanel({
     token
   } = useContext(AuthContext)
 
+
   const [activities, setActivities] =
     useState([])
 
 
-  // FETCH ACTIVITIES
+  // FETCH
   const fetchActivities =
     async () => {
 
       try {
 
         const data =
-          await getActivities(
+          await getWorkspaceActivity(
+
             token,
+
             workspaceId
           )
 
@@ -56,29 +59,46 @@ function ActivityPanel({
   }, [])
 
 
-  // LIVE ACTIVITIES
+  // REALTIME
   useEffect(() => {
 
     if (!socket) return
 
-    socket.onmessage = (event) => {
 
-      const data = JSON.parse(
-        event.data
-      )
+    const handleMessage =
+      (event) => {
 
-      if (
-        data.event ===
-        "activity_created"
-      ) {
+        const data =
+          JSON.parse(event.data)
 
-        setActivities((prev) => [
 
-          data.activity,
+        if (
+          data.event ===
+          "activity"
+        ) {
 
-          ...prev
-        ])
+          setActivities((prev) => [
+
+            data.activity,
+
+            ...prev
+          ])
+        }
       }
+
+
+    socket.addEventListener(
+      "message",
+      handleMessage
+    )
+
+
+    return () => {
+
+      socket.removeEventListener(
+        "message",
+        handleMessage
+      )
     }
 
   }, [socket])
@@ -87,47 +107,71 @@ function ActivityPanel({
   return (
 
     <div className="
-      bg-white/50
+      bg-white/40
       backdrop-blur-lg
+      border border-white/20
       rounded-3xl
-      shadow-xl
       p-5
-      h-full
+      shadow-xl
     ">
 
-      <h2 className="
-        text-2xl
-        font-bold
+      <div className="
+        flex
+        justify-between
+        items-center
         mb-5
       ">
 
-        Activity Timeline
+        <h2 className="
+          text-xl
+          font-bold
+          text-gray-800
+        ">
 
-      </h2>
+          Activity Feed
+
+        </h2>
+
+      </div>
 
 
+      {/* LIST */}
       <div className="
         space-y-4
-        max-h-[700px]
+        max-h-[500px]
         overflow-y-auto
       ">
 
         {activities.map((activity) => (
 
           <div
+
             key={activity.id}
+
             className="
-              bg-white
-              p-4
+              bg-white/70
               rounded-2xl
-              shadow
+              p-4
+              border
+              border-white/20
             "
           >
 
             <p className="
-              text-gray-800
-              font-medium
+              text-sm
+              text-gray-700
             ">
+
+              <span className="
+                font-bold
+                text-blue-700
+              ">
+
+                {activity.user}
+
+              </span>
+
+              {" "}
 
               {activity.action}
 

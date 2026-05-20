@@ -1,455 +1,224 @@
 import {
-  useState,
-  useEffect,
-  useContext
-} from "react"
-import UserAvatar from "./UserAvatar.jsx"
-import {
   useDraggable
 } from "@dnd-kit/core"
 
 import {
-  motion
-} from "framer-motion"
-
-import {
-  AuthContext
-} from "../context/AuthContext"
-
-import {
-  getWorkspaceMembers
-} from "../api/memberApi"
-
-import {
-  assignTask
-} from "../api/taskApi"
+  CSS
+} from "@dnd-kit/utilities"
 
 import CommentPanel from "./CommentPanel.jsx"
 
 import AttachmentPanel from "./AttachmentPanel.jsx"
 
+import AssignMemberDropdown from "./AssignMemberDropdown.jsx"
+
+import UserAvatar from "./UserAvatar.jsx"
+
 
 function TaskCard({
 
   task,
-  socket
+  workspaceId,
+  onTaskAssigned
 
 }) {
 
-  // DRAGGING
   const {
     attributes,
     listeners,
     setNodeRef,
-    transform
+    transform,
+    transition
   } = useDraggable({
 
     id: task.id
   })
 
 
-  const style = transform
-    ? {
-        transform:
-          `translate3d(
-            ${transform.x}px,
-            ${transform.y}px,
-            0
-          )`
-      }
-    : undefined
+  const style = {
 
+    transform:
+      CSS.Translate.toString(
+        transform
+      ),
 
-  // AUTH
-  const {
-    token
-  } = useContext(AuthContext)
-
-
-  // STATES
-  const [showComments, setShowComments] =
-    useState(false)
-
-  const [
-    showAttachments,
-    setShowAttachments
-  ] = useState(false)
-
-  const [members, setMembers] =
-    useState([])
-
-
-  // FETCH MEMBERS
-  useEffect(() => {
-
-    const fetchMembers =
-      async () => {
-
-        try {
-
-          const data =
-            await getWorkspaceMembers(
-
-              token,
-
-              task.workspace_id
-            )
-
-          setMembers(data)
-
-        } catch (error) {
-
-          console.log(error)
-        }
-      }
-
-    fetchMembers()
-
-  }, [])
-
-
-  // ASSIGN USER
-  const handleAssignUser =
-    async (userId) => {
-
-      try {
-
-        await assignTask(
-
-          token,
-
-          task.id,
-
-          parseInt(userId)
-        )
-
-      } catch (error) {
-
-        console.log(error)
-      }
-    }
-
-
-  // PRIORITY COLORS
-  const priorityColors = {
-
-    low:
-      "bg-green-100 text-green-600",
-
-    medium:
-      "bg-yellow-100 text-yellow-700",
-
-    high:
-      "bg-red-100 text-red-600"
+    transition
   }
-
-
-  // FIND ASSIGNED USER
-  const assignedUser =
-    members.find(
-
-      (member) =>
-
-        member.id ===
-        task.assigned_to
-    )
 
 
   return (
 
-    <motion.div
-
-      whileHover={{
-        scale: 1.03
-      }}
-
-      whileTap={{
-        scale: 0.98
-      }}
+    <div
 
       ref={setNodeRef}
 
       style={style}
 
-      {...listeners}
-
-      {...attributes}
-
       className="
-        bg-white/80
-        backdrop-blur-md
-        border border-white/20
+        bg-white/70
+        backdrop-blur-lg
+        rounded-3xl
         p-5
-        rounded-2xl
-        shadow-lg
-        cursor-grab
-        transition
+        shadow-xl
+        border
+        border-white/20
+        space-y-5
       "
     >
 
-      {/* TITLE */}
-      <h2 className="
-        text-xl
-        font-bold
-        text-gray-800
-      ">
+      {/* DRAG HANDLE */}
+      <div
 
-        {task.title}
+        {...listeners}
 
-      </h2>
+        {...attributes}
+
+        className="
+          cursor-grab
+          active:cursor-grabbing
+        "
+      >
+
+        {/* TITLE */}
+        <div>
+
+          <h2 className="
+            text-xl
+            font-bold
+            text-gray-800
+          ">
+
+            {task.title}
+
+          </h2>
 
 
-      {/* DESCRIPTION */}
-      <p className="
-        text-gray-600
-        mt-3
-      ">
+          <p className="
+            text-gray-600
+            mt-2
+          ">
 
-        {task.description}
+            {task.description}
 
-      </p>
+          </p>
 
+        </div>
 
-      {/* FOOTER */}
-      <div className="
-        mt-5
-        flex
-        justify-between
-        items-center
-      ">
 
         {/* PRIORITY */}
-        <span
-          className={`
-            text-sm
-            px-3
-            py-1
-            rounded-full
-            font-semibold
-
-            ${priorityColors[
-              task.priority
-            ]}
-          `}
-        >
-
-          {task.priority}
-
-        </span>
-
-
-        {/* STATUS */}
-        <span className="
-          text-sm
-          bg-blue-100
-          text-blue-600
-          px-3
-          py-1
-          rounded-full
-          font-semibold
+        <div className="
+          mt-4
+          flex
+          justify-between
+          items-center
         ">
-
-          {task.status}
-
-        </span>
-
-      </div>
-
-
-      {/* ASSIGNED USER */}
-      <div className="
-        mt-5
-      ">
-
-        <label className="
-          text-sm
-          font-semibold
-          text-gray-700
-        ">
-
-          Assign Task
-
-        </label>
-
-
-        <select
-
-          onChange={(e) =>
-            handleAssignUser(
-              e.target.value
-            )
-          }
-
-          value={
-            task.assigned_to || ""
-          }
-
-          className="
-            w-full
-            mt-2
-            border
-            p-2
-            rounded-xl
-            bg-white
-          "
-        >
-
-          <option value="">
-            Unassigned
-          </option>
-
-          {members.map((member) => (
-
-            <option
-              key={member.id}
-              value={member.id}
-            >
-
-              {member.name}
-
-            </option>
-
-          ))}
-
-        </select>
-
-      </div>
-
-
-      {/* ASSIGNEE */}
-{assignedUser && (
+          {task.due_date && (
 
   <div className="
-    mt-4
-    flex
-    items-center
-    gap-3
+    mt-3
   ">
 
-    <UserAvatar
+    <span className="
+      bg-red-100
+      text-red-700
+      text-xs
+      px-3
+      py-1
+      rounded-full
+      font-semibold
+    ">
 
-      name={assignedUser.name}
+      Due:
+      {" "}
 
-      online={true}
+      {new Date(
+        task.due_date
+      ).toLocaleString()}
 
-      size="md"
-
-    />
-
-
-    <div>
-
-      <p className="
-        text-sm
-        text-gray-500
-      ">
-
-        Assigned To
-
-      </p>
-
-      <p className="
-        font-semibold
-        text-gray-800
-      ">
-
-        {assignedUser.name}
-
-      </p>
-
-    </div>
+    </span>
 
   </div>
 
 )}
 
+          <span className="
+            px-3
+            py-1
+            rounded-full
+            text-sm
+            font-semibold
+            bg-indigo-100
+            text-indigo-700
+          ">
 
-      {/* COMMENT BUTTON */}
-      <button
+            {task.priority}
 
-        onClick={() =>
-          setShowComments(
-            !showComments
-          )
-        }
+          </span>
 
-        className="
-          mt-5
-          w-full
-          bg-indigo-600
-          hover:bg-indigo-700
-          text-white
-          py-2
-          rounded-xl
-          font-semibold
-          transition
-        "
-      >
+        </div>
 
-        {showComments
-          ? "Hide Comments"
-          : "Open Discussion"}
-
-      </button>
+      </div>
 
 
-      {/* ATTACHMENT BUTTON */}
-      <button
+      {/* ASSIGNED USER */}
+      {task.assigned_user && (
 
-        onClick={() =>
-          setShowAttachments(
-            !showAttachments
-          )
-        }
+        <div className="
+          bg-blue-50
+          rounded-2xl
+          p-3
+        ">
 
-        className="
-          mt-3
-          w-full
-          bg-emerald-600
-          hover:bg-emerald-700
-          text-white
-          py-2
-          rounded-xl
-          font-semibold
-          transition
-        "
-      >
+          <p className="
+            text-xs
+            text-gray-500
+            mb-2
+          ">
 
-        {showAttachments
-          ? "Hide Files"
-          : "Attachments"}
+            Assigned To
 
-      </button>
+          </p>
+
+
+          <UserAvatar
+
+            user={task.assigned_user}
+
+          />
+
+        </div>
+
+      )}
+
+
+      {/* ASSIGN DROPDOWN */}
+      <AssignMemberDropdown
+
+        workspaceId={workspaceId}
+
+        taskId={task.id}
+
+        onAssigned={onTaskAssigned}
+
+      />
 
 
       {/* COMMENTS */}
-      {showComments && (
+      <CommentPanel
 
-        <CommentPanel
+        taskId={task.id}
 
-          task={task}
-
-          socket={socket}
-
-        />
-
-      )}
+      />
 
 
       {/* ATTACHMENTS */}
-      {showAttachments && (
+      <AttachmentPanel
 
-        <AttachmentPanel
-          taskId={task.id}
-          task={task}
+        taskId={task.id}
 
-          socket={socket}
+      />
 
-        />
-
-      )}
-
-    </motion.div>
+    </div>
   )
 }
 

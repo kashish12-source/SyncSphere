@@ -1,20 +1,14 @@
 import api from "./axios"
 
 
-// GET COMMENTS
-export const getComments =
-  async (
-
-    token,
-
-    taskId
-
-  ) => {
+// GET NOTIFICATIONS
+export const getNotifications =
+  async (token) => {
 
     const response =
       await api.get(
 
-        `/comment/${taskId}`,
+        "/notification",
 
         {
           headers: {
@@ -29,22 +23,22 @@ export const getComments =
 }
 
 
-// CREATE COMMENT
-export const createComment =
+// MARK AS READ
+export const markNotificationRead =
   async (
 
     token,
 
-    commentData
+    notificationId
 
   ) => {
 
     const response =
-      await api.post(
+      await api.put(
 
-        "/comment/create",
+        `/notification/${notificationId}/read`,
 
-        commentData,
+        {},
 
         {
           headers: {

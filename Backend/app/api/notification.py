@@ -5,50 +5,81 @@ from fastapi import (
 
 from sqlalchemy.orm import Session
 
-from app.db.session import get_db
+from app.db.database import (
+    get_db
+)
 
-from app.models.notification import Notification
-from app.models.user import User
+from app.models.notification import (
+    Notification
+)
 
-from app.auth.oauth2 import get_current_user
+from app.models.user import (
+    User
+)
 
-
-router = APIRouter(
-    prefix="/notifications",
-    tags=["Notifications"]
+from app.auth.jwt_handler import (
+    get_current_user
 )
 
 
-# GET USER NOTIFICATIONS
+router = APIRouter(
+
+    prefix="/notification",
+
+    tags=["Notification"]
+)
+
+
+# GET NOTIFICATIONS
 @router.get("/")
 def get_notifications(
+
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+
+    current_user: User = Depends(
+        get_current_user
+    )
 ):
 
     notifications = db.query(
         Notification
     ).filter(
-        Notification.user_id == current_user.id
+
+        Notification.user_id
+        == current_user.id
+
+    ).order_by(
+
+        Notification.id.desc()
+
     ).all()
+
 
     return notifications
 
 
-# MARK AS READ
+# MARK READ
 @router.put("/{notification_id}/read")
-def mark_notification_read(
+def mark_read(
+
     notification_id: int,
+
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+
+    current_user: User = Depends(
+        get_current_user
+    )
 ):
 
     notification = db.query(
         Notification
     ).filter(
-        Notification.id == notification_id,
-        Notification.user_id == current_user.id
+
+        Notification.id
+        == notification_id
+
     ).first()
+
 
     if notification:
 
@@ -56,6 +87,7 @@ def mark_notification_read(
 
         db.commit()
 
-    return {
-        "message": "Notification updated"
-    }
+        db.refresh(notification)
+
+
+    return notification

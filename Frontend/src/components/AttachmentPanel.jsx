@@ -52,20 +52,25 @@ function AttachmentsPanel({
 
       } catch (error) {
 
-        console.log(error)
+        console.log(
+          "Attachment Fetch Error:",
+          error
+        )
       }
     }
 
 
-  // INITIAL LOAD
   useEffect(() => {
 
-    fetchAttachments()
+    if (taskId) {
 
-  }, [])
+      fetchAttachments()
+    }
+
+  }, [taskId])
 
 
-  // UPLOAD
+  // UPLOAD FILE
   const handleUpload =
     async (e) => {
 
@@ -79,6 +84,11 @@ function AttachmentsPanel({
 
         setUploading(true)
 
+        console.log(
+          "Uploading:",
+          file.name
+        )
+
         await uploadAttachment(
 
           token,
@@ -88,11 +98,14 @@ function AttachmentsPanel({
           file
         )
 
-        fetchAttachments()
+        await fetchAttachments()
 
       } catch (error) {
 
-        console.log(error)
+        console.log(
+          "Upload Error:",
+          error
+        )
 
       } finally {
 
@@ -121,7 +134,7 @@ function AttachmentsPanel({
       ">
 
         <h2 className="
-          text-xl
+          text-lg
           font-bold
           text-gray-800
         ">
@@ -166,6 +179,20 @@ function AttachmentsPanel({
       <div className="
         space-y-4
       ">
+
+        {attachments.length === 0 && (
+
+          <p className="
+            text-gray-500
+            text-sm
+          ">
+
+            No attachments yet
+
+          </p>
+
+        )}
+
 
         {attachments.map((attachment) => (
 

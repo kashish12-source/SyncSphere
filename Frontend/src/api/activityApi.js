@@ -1,24 +1,29 @@
 import api from "./axios"
 
 
-export const getActivities = async (
+// GET ACTIVITY
+export const getWorkspaceActivity =
+  async (
 
-  token,
-  workspaceId
+    token,
 
-) => {
+    workspaceId
 
-  const response = await api.get(
+  ) => {
 
-    `/activities/${workspaceId}`,
+    const response =
+      await api.get(
 
-    {
-      headers: {
-        Authorization:
-          `Bearer ${token}`
-      }
-    }
-  )
+        `/activity/${workspaceId}`,
 
-  return response.data
+        {
+          headers: {
+
+            Authorization:
+              `Bearer ${token}`
+          }
+        }
+      )
+
+    return response.data
 }

@@ -95,132 +95,142 @@ function WorkspacePage() {
   }, [])
 
 
-  // WEBSOCKET
-  useEffect(() => {
+// WEBSOCKET
+useEffect(() => {
 
-    if (!user) return
+  if (
+    !workspaceId ||
+    !user?.name
+  ) return
 
 
-    const ws =
-      connectWorkspaceSocket(
+  const ws =
+    connectWorkspaceSocket(
 
-        workspaceId,
+      workspaceId,
 
-        user.name,
+      user.name,
 
-        (data) => {
+      (data) => {
 
-          console.log(
-            "Live Event:",
-            data
+        console.log(
+          "Live Event:",
+          data
+        )
+
+
+        // ONLINE USERS
+        if (
+          data.event ===
+          "online_users"
+        ) {
+
+          setOnlineUsers(
+            data.users
           )
-
-
-          // ONLINE USERS
-          if (
-            data.event ===
-            "online_users"
-          ) {
-
-            setOnlineUsers(
-              data.users
-            )
-          }
-
-
-          // TASK CREATED
-          if (
-            data.event ===
-            "task_created"
-          ) {
-
-            setTasks((prev) => [
-
-              ...prev,
-
-              data.task
-            ])
-          }
-
-
-          // TASK UPDATED
-          if (
-            data.event ===
-            "task_updated"
-          ) {
-
-            setTasks((prev) =>
-
-              prev.map((task) =>
-
-                task.id ===
-                data.task.id
-
-                  ? {
-                      ...task,
-                      ...data.task
-                    }
-
-                  : task
-              )
-            )
-          }
-
-
-          // TASK ASSIGNED
-          if (
-            data.event ===
-            "task_assigned"
-          ) {
-
-            setTasks((prev) =>
-
-              prev.map((task) =>
-
-                task.id ===
-                data.task.id
-
-                  ? {
-                      ...task,
-
-                      assigned_to:
-                        data.task.assigned_to
-                    }
-
-                  : task
-              )
-            )
-          }
-
-
-          // TASK DELETED
-          if (
-            data.event ===
-            "task_deleted"
-          ) {
-
-            setTasks((prev) =>
-
-              prev.filter(
-
-                (task) =>
-
-                  task.id !==
-                  data.task_id
-              )
-            )
-          }
         }
-      )
 
-    setSocket(ws)
 
-    return () => {
+        // TASK CREATED
+        if (
+          data.event ===
+          "task_created"
+        ) {
+
+          setTasks((prev) => [
+
+            ...prev,
+
+            data.task
+          ])
+        }
+
+
+        // TASK UPDATED
+        if (
+          data.event ===
+          "task_updated"
+        ) {
+
+          setTasks((prev) =>
+
+            prev.map((task) =>
+
+              task.id ===
+              data.task.id
+
+                ? {
+                    ...task,
+                    ...data.task
+                  }
+
+                : task
+            )
+          )
+        }
+
+
+        // TASK ASSIGNED
+        if (
+          data.event ===
+          "task_assigned"
+        ) {
+
+          setTasks((prev) =>
+
+            prev.map((task) =>
+
+              task.id ===
+              data.task.id
+
+                ? {
+                    ...task,
+
+                    assigned_to:
+                      data.task.assigned_to
+                  }
+
+                : task
+            )
+          )
+        }
+
+
+        // TASK DELETED
+        if (
+          data.event ===
+          "task_deleted"
+        ) {
+
+          setTasks((prev) =>
+
+            prev.filter(
+
+              (task) =>
+
+                task.id !==
+                data.task_id
+            )
+          )
+        }
+      }
+    )
+
+  setSocket(ws)
+
+
+  return () => {
+
+    if (
+      ws.readyState ===
+      WebSocket.OPEN
+    ) {
 
       ws.close()
     }
+  }
 
-  }, [user])
+}, [workspaceId, user?.name])
 
 
   // CREATE TASK
@@ -301,6 +311,22 @@ function WorkspacePage() {
         console.log(error)
       }
     }
+  // TASK ASSIGNED
+  const handleTaskAssigned =
+  (updatedTask) => {
+
+    setTasks((prev) =>
+
+      prev.map((task) =>
+
+        task.id === updatedTask.id
+
+          ? updatedTask
+
+          : task
+      )
+    )
+}
 
 
   // FILTER TASKS
@@ -434,11 +460,15 @@ function WorkspacePage() {
             ">
 
               <KanbanColumn
-                title="Todo"
-                tasks={todoTasks}
-                columnId="todo"
-                socket={socket}
-              />
+  title="Todo"
+  tasks={todoTasks}
+  columnId="todo"
+  workspaceId={workspaceId}
+  onTaskAssigned={
+    handleTaskAssigned
+  }
+  socket={socket}
+/>
 
               <KanbanColumn
                 title="In Progress"

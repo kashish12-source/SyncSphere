@@ -2,10 +2,6 @@ import {
   useDroppable
 } from "@dnd-kit/core"
 
-import {
-  motion
-} from "framer-motion"
-
 import TaskCard from "./TaskCard.jsx"
 
 
@@ -14,7 +10,8 @@ function KanbanColumn({
   title,
   tasks,
   columnId,
-  socket
+  workspaceId,
+  onTaskAssigned
 
 }) {
 
@@ -28,32 +25,19 @@ function KanbanColumn({
 
   return (
 
-    <motion.div
-
-      initial={{
-        opacity: 0,
-        y: 20
-      }}
-
-      animate={{
-        opacity: 1,
-        y: 0
-      }}
-
-      transition={{
-        duration: 0.3
-      }}
+    <div
 
       ref={setNodeRef}
 
       className="
         bg-white/40
         backdrop-blur-lg
-        border border-white/20
         rounded-3xl
-        p-5
-        min-h-[700px]
+        p-6
         shadow-xl
+        border
+        border-white/20
+        min-h-[600px]
       "
     >
 
@@ -75,13 +59,15 @@ function KanbanColumn({
 
         </h2>
 
+
         <span className="
-          bg-gray-800
-          text-white
+          bg-blue-100
+          text-blue-700
           px-3
           py-1
           rounded-full
           text-sm
+          font-semibold
         ">
 
           {tasks.length}
@@ -92,7 +78,9 @@ function KanbanColumn({
 
 
       {/* TASKS */}
-      <div className="space-y-5">
+      <div className="
+        space-y-5
+      ">
 
         {tasks.map((task) => (
 
@@ -102,7 +90,11 @@ function KanbanColumn({
 
             task={task}
 
-            socket={socket}
+            workspaceId={workspaceId}
+
+            onTaskAssigned={
+              onTaskAssigned
+            }
 
           />
 
@@ -110,7 +102,7 @@ function KanbanColumn({
 
       </div>
 
-    </motion.div>
+    </div>
   )
 }
 

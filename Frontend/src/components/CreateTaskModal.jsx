@@ -10,69 +10,146 @@ function CreateTaskModal({
 
 }) {
 
-  const [formData, setFormData] =
-    useState({
+  const [title, setTitle] =
+    useState("")
 
-      title: "",
-      description: "",
-      priority: "medium",
-      assigned_to: 1
-    })
+  const [description,
+    setDescription] =
+      useState("")
 
+  const [priority,
+    setPriority] =
+      useState("medium")
 
-  const handleChange = (e) => {
-
-    setFormData({
-
-      ...formData,
-
-      [e.target.name]:
-        e.target.value
-    })
-  }
+  const [dueDate,
+    setDueDate] =
+      useState("")
 
 
-  const handleSubmit = (e) => {
+  const handleSubmit =
+    (e) => {
 
-    e.preventDefault()
+      e.preventDefault()
 
-    onCreate(formData)
-  }
+      onCreate({
+
+        title,
+        description,
+        priority,
+
+        due_date:
+          dueDate || null
+      })
+    }
 
 
   return (
 
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
+    <div className="
+      fixed
+      inset-0
+      bg-black/40
+      flex
+      justify-center
+      items-center
+      z-50
+    ">
 
-      <div className="bg-white p-8 rounded-2xl w-[450px]">
+      <div className="
+        bg-white
+        rounded-3xl
+        p-8
+        w-[500px]
+        shadow-2xl
+      ">
 
-        <h1 className="text-2xl font-bold mb-6">
+        <h2 className="
+          text-3xl
+          font-bold
+          mb-6
+        ">
 
           Create Task
 
-        </h1>
+        </h2>
 
-        <form onSubmit={handleSubmit}>
 
+        <form
+          onSubmit={handleSubmit}
+          className="
+            space-y-5
+          "
+        >
+
+          {/* TITLE */}
           <input
+
             type="text"
-            name="title"
-            placeholder="Task Title"
-            onChange={handleChange}
-            className="w-full border p-3 rounded mb-4"
+
+            placeholder="Task title"
+
+            value={title}
+
+            onChange={(e) =>
+              setTitle(
+                e.target.value
+              )
+            }
+
+            className="
+              w-full
+              border
+              rounded-2xl
+              p-4
+              outline-none
+            "
+
+            required
           />
 
+
+          {/* DESCRIPTION */}
           <textarea
-            name="description"
+
             placeholder="Description"
-            onChange={handleChange}
-            className="w-full border p-3 rounded mb-4"
+
+            value={description}
+
+            onChange={(e) =>
+              setDescription(
+                e.target.value
+              )
+            }
+
+            className="
+              w-full
+              border
+              rounded-2xl
+              p-4
+              outline-none
+              h-[120px]
+            "
           />
 
+
+          {/* PRIORITY */}
           <select
-            name="priority"
-            onChange={handleChange}
-            className="w-full border p-3 rounded mb-4"
+
+            value={priority}
+
+            onChange={(e) =>
+              setPriority(
+                e.target.value
+              )
+            }
+
+            className="
+              w-full
+              border
+              rounded-2xl
+              p-4
+              outline-none
+            "
           >
 
             <option value="low">
@@ -89,28 +166,88 @@ function CreateTaskModal({
 
           </select>
 
-          <input
-            type="number"
-            name="assigned_to"
-            placeholder="Assign User ID"
-            onChange={handleChange}
-            className="w-full border p-3 rounded mb-4"
-          />
 
-          <div className="flex justify-end gap-4">
+          {/* DUE DATE */}
+          <div>
+
+            <label className="
+              text-sm
+              text-gray-500
+              mb-2
+              block
+            ">
+
+              Due Date
+
+            </label>
+
+            <input
+
+              type="datetime-local"
+
+              value={dueDate}
+
+              onChange={(e) =>
+                setDueDate(
+                  e.target.value
+                )
+              }
+
+              className="
+                w-full
+                border
+                rounded-2xl
+                p-4
+                outline-none
+              "
+            />
+
+          </div>
+
+
+          {/* BUTTONS */}
+          <div className="
+            flex
+            justify-end
+            gap-4
+            pt-4
+          ">
 
             <button
+
               type="button"
+
               onClick={onClose}
-              className="px-4 py-2 bg-gray-300 rounded"
+
+              className="
+                px-6
+                py-3
+                rounded-2xl
+                bg-gray-200
+              "
             >
+
               Cancel
+
             </button>
 
+
             <button
-              className="px-4 py-2 bg-blue-600 text-white rounded"
+
+              type="submit"
+
+              className="
+                px-6
+                py-3
+                rounded-2xl
+                bg-blue-600
+                text-white
+                font-bold
+              "
             >
+
               Create
+
             </button>
 
           </div>

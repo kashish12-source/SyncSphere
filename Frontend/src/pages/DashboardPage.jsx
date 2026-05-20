@@ -5,6 +5,10 @@ import {
 } from "react"
 
 import {
+  useNavigate
+} from "react-router-dom"
+
+import {
   AuthContext
 } from "../context/AuthContext"
 
@@ -15,95 +19,60 @@ import {
 
 import WorkspaceCard from "../components/WorkspaceCard.jsx"
 
-import CreateWorkspaceModal from "../components/CreateWorkspaceModal.jsx"
+import NotificationPanel from "../components/NotificationPanel.jsx"
 
-import {
-  connectNotificationSocket
-} from "../websocket/socket"
+import CreateWorkspaceModal from "../components/CreateWorkspaceModal.jsx"
 
 
 function DashboardPage() {
 
+  const navigate =
+    useNavigate()
+
+
   const {
-    user,
     token,
-    logout
+    user
   } = useContext(AuthContext)
 
+
+  // STATES
   const [workspaces, setWorkspaces] =
     useState([])
 
   const [showModal, setShowModal] =
     useState(false)
 
-  // LIVE NOTIFICATIONS
-  const [notifications, setNotifications] =
-    useState([])
-
 
   // FETCH WORKSPACES
-  const fetchWorkspaces = async () => {
+  const fetchWorkspaces =
+    async () => {
 
-    try {
+      try {
 
-      const data =
-        await getMyWorkspaces(token)
+        const data =
+          await getMyWorkspaces(
+            token
+          )
 
-      setWorkspaces(data)
+        setWorkspaces(data)
 
-    } catch (error) {
+      } catch (error) {
 
-      console.log(error)
+        console.log(error)
+      }
     }
-  }
 
 
   // INITIAL LOAD
   useEffect(() => {
 
-    fetchWorkspaces()
+    if (token) {
 
-  }, [])
-
-
-  // NOTIFICATION SOCKET
-  useEffect(() => {
-
-    if (!user) return
-
-    const ws =
-      connectNotificationSocket(
-
-        user.id,
-
-        (data) => {
-
-          console.log(
-            "Notification:",
-            data
-          )
-
-          if (
-            data.event ===
-            "notification"
-          ) {
-
-            setNotifications((prev) => [
-
-              data.message,
-
-              ...prev
-            ])
-          }
-        }
-      )
-
-    return () => {
-
-      ws.close()
+      fetchWorkspaces()
     }
 
-  }, [user])
+  }, [token])
 
 
   // CREATE WORKSPACE
@@ -113,7 +82,9 @@ function DashboardPage() {
       try {
 
         await createWorkspace(
+
           token,
+
           workspaceData
         )
 
@@ -141,7 +112,7 @@ function DashboardPage() {
 
       {/* SIDEBAR */}
       <div className="
-        w-[260px]
+        w-[300px]
         bg-white/40
         backdrop-blur-lg
         border-r
@@ -150,11 +121,12 @@ function DashboardPage() {
         p-6
       ">
 
+        {/* LOGO */}
         <h1 className="
-          text-4xl
+          text-5xl
           font-extrabold
           text-blue-700
-          mb-10
+          mb-12
         ">
 
           SyncSphere
@@ -162,57 +134,107 @@ function DashboardPage() {
         </h1>
 
 
+        {/* USER */}
+        <div className="
+          bg-white/60
+          rounded-3xl
+          p-4
+          mb-8
+          border
+          border-white/20
+        ">
+
+          <p className="
+            text-sm
+            text-gray-500
+          ">
+
+            Logged in as
+
+          </p>
+
+
+          <h2 className="
+            text-xl
+            font-bold
+            text-gray-800
+            mt-1
+          ">
+
+            {user?.name}
+
+          </h2>
+
+        </div>
+
+
+        {/* CREATE BUTTON */}
         <button
+
           onClick={() =>
             setShowModal(true)
           }
+
           className="
             w-full
+            py-5
+            rounded-3xl
             bg-blue-600
             hover:bg-blue-700
             text-white
-            p-4
-            rounded-2xl
-            font-semibold
+            text-xl
+            font-bold
             shadow-lg
             transition
           "
         >
+
           + Create Workspace
+
         </button>
 
       </div>
 
 
-      {/* MAIN CONTENT */}
-      <div className="flex-1">
+      {/* MAIN */}
+      <div className="
+        flex-1
+        overflow-y-auto
+      ">
 
-        {/* NAVBAR */}
+        {/* HEADER */}
         <div className="
           bg-white/50
           backdrop-blur-lg
           border-b
           border-white/20
           shadow-md
-          p-5
+          px-8
+          py-6
           flex
           justify-between
           items-center
         ">
 
+          {/* LEFT */}
           <div>
 
-            <h2 className="
-              text-3xl
+            <h1 className="
+              text-5xl
               font-extrabold
               text-blue-700
             ">
 
               Dashboard
 
-            </h2>
+            </h1>
 
-            <p className="text-gray-600 mt-1">
+
+            <p className="
+              text-gray-600
+              mt-2
+              text-lg
+            ">
 
               Real-time collaboration platform
 
@@ -221,109 +243,41 @@ function DashboardPage() {
           </div>
 
 
+          {/* RIGHT */}
           <div className="
             flex
             items-center
             gap-5
           ">
 
-            {/* NOTIFICATIONS */}
-            <div className="relative">
-
-              <button
-                className="
-                  bg-yellow-400
-                  hover:bg-yellow-500
-                  px-5
-                  py-3
-                  rounded-2xl
-                  font-semibold
-                  shadow-md
-                  transition
-                "
-              >
-                Notifications
-                {" "}
-                ({notifications.length})
-              </button>
-
-            </div>
-
-
-            {/* USER */}
-            <div className="
-              bg-white/60
-              backdrop-blur-md
-              px-4
-              py-2
-              rounded-2xl
-              shadow
-              font-semibold
-            ">
-
-              {user?.name}
-
-            </div>
-
-
-            {/* LOGOUT */}
-            <button
-              onClick={logout}
-              className="
-                bg-red-500
-                hover:bg-red-600
-                text-white
-                px-5
-                py-3
-                rounded-2xl
-                font-semibold
-                shadow-lg
-                transition
-              "
-            >
-              Logout
-            </button>
+            <NotificationPanel />
 
           </div>
 
         </div>
 
 
-        {/* WORKSPACES */}
-        <div className="p-8">
+        {/* CONTENT */}
+        <div className="
+          p-10
+        ">
 
           <div className="
             flex
             justify-between
             items-center
-            mb-8
+            mb-10
           ">
 
             <h2 className="
-              text-4xl
+              text-6xl
               font-extrabold
-              text-gray-800
+              text-slate-800
             ">
 
               Your Workspaces
 
             </h2>
-
-            <div className="
-              bg-white/60
-              backdrop-blur-md
-              px-5
-              py-2
-              rounded-2xl
-              shadow
-              font-semibold
-            ">
-
-              {workspaces.length}
-              {" "}
-              Workspace(s)
-
-            </div>
 
           </div>
 
@@ -337,11 +291,22 @@ function DashboardPage() {
             gap-8
           ">
 
-            {workspaces?.map((workspace) => (
+            {workspaces.map((workspace) => (
 
               <WorkspaceCard
-                key={workspace.workspace_id}
+
+                key={workspace.id}
+
                 workspace={workspace}
+
+                onClick={() =>
+
+                  navigate(
+
+                    `/workspace/${workspace.id}`
+                  )
+                }
+
               />
 
             ))}
@@ -357,12 +322,15 @@ function DashboardPage() {
       {showModal && (
 
         <CreateWorkspaceModal
+
           onClose={() =>
             setShowModal(false)
           }
+
           onCreate={
             handleCreateWorkspace
           }
+
         />
 
       )}

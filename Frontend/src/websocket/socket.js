@@ -1,16 +1,19 @@
+// CONNECT WORKSPACE SOCKET
 export const connectWorkspaceSocket = (
 
   workspaceId,
-  userId,
+  username,
   onMessage
 
 ) => {
 
   const socket = new WebSocket(
 
-    `ws://127.0.0.1:8000/ws/${workspaceId}/${userId}`
+    `ws://127.0.0.1:8000/ws/${workspaceId}/${username}`
   )
 
+
+  // CONNECTED
   socket.onopen = () => {
 
     console.log(
@@ -18,15 +21,35 @@ export const connectWorkspaceSocket = (
     )
   }
 
+
+  // MESSAGE
   socket.onmessage = (event) => {
 
-    const data = JSON.parse(
-      event.data
-    )
+    try {
 
-    onMessage(data)
+      const data =
+        JSON.parse(event.data)
+
+      onMessage(data)
+
+    } catch (error) {
+
+      console.log(
+        "Socket Parse Error:",
+        error
+      )
+    }
   }
 
+
+  // IGNORE DEV ERRORS
+  socket.onerror = () => {
+
+    // React strict mode causes temporary websocket reconnects
+  }
+
+
+  // CLOSED
   socket.onclose = () => {
 
     console.log(
@@ -34,44 +57,6 @@ export const connectWorkspaceSocket = (
     )
   }
 
-  return socket
-}
-
-
-
-// NOTIFICATION SOCKET
-export const connectNotificationSocket = (
-  userId,
-  onMessage
-) => {
-
-  const socket = new WebSocket(
-
-    `ws://127.0.0.1:8000/ws/user/${userId}`
-  )
-
-  socket.onopen = () => {
-
-    console.log(
-      "Notification socket connected"
-    )
-  }
-
-  socket.onmessage = (event) => {
-
-    const data = JSON.parse(
-      event.data
-    )
-
-    onMessage(data)
-  }
-
-  socket.onclose = () => {
-
-    console.log(
-      "Notification socket disconnected"
-    )
-  }
 
   return socket
 }

@@ -6,6 +6,10 @@ from fastapi import (
 
 from sqlalchemy.orm import Session
 
+from pydantic import BaseModel
+
+from typing import Optional
+
 from app.db.database import (
     get_db
 )
@@ -14,40 +18,76 @@ from app.models.task import (
     Task
 )
 
-from app.schemas.task import (
-    TaskCreate,
-    TaskStatusUpdate,
-    TaskAssign
+from app.models.user import (
+    User
+)
+
+from app.models.workspace_member import (
+    WorkspaceMember
 )
 
 from app.auth.jwt_handler import (
     get_current_user
 )
 
-from app.websocket.manager import (
-    manager
+from app.services.activity_service import (
+    create_activity
 )
 
-from app.utils.activity_logger import (
-    log_activity
+from app.services.notification_service import (
+    create_notification
 )
+
+import asyncio
 
 
 router = APIRouter(
+
     prefix="/tasks",
+
     tags=["Tasks"]
 )
 
 
+# =========================
+# SCHEMAS
+# =========================
+
+class TaskCreate(BaseModel):
+
+    title: str
+
+    description: str
+
+    priority: str
+
+    workspace_id: int
+
+    due_date: Optional[str] = None
+
+
+class TaskStatusUpdate(BaseModel):
+
+    status: str
+
+
+class AssignTaskSchema(BaseModel):
+
+    assigned_to: int
+
+
+# =========================
 # CREATE TASK
+# =========================
+
 @router.post("/create")
-async def create_task(
+def create_task(
 
     task: TaskCreate,
 
     db: Session = Depends(get_db),
 
-    current_user = Depends(
+    current_user: User = Depends(
         get_current_user
     )
 ):
@@ -64,7 +104,7 @@ async def create_task(
 
         workspace_id=task.workspace_id,
 
-        assigned_to=task.assigned_to
+        due_date=task.due_date
     )
 
     db.add(new_task)
@@ -74,64 +114,38 @@ async def create_task(
     db.refresh(new_task)
 
 
-    # ACTIVITY LOG
-    await log_activity(
+    # ACTIVITY
+    asyncio.create_task(
 
-        db,
+        create_activity(
 
-        new_task.workspace_id,
+            db,
 
-        current_user.id,
+            task.workspace_id,
 
-        f"{current_user.name} created task '{new_task.title}'"
-    )
+            current_user.name,
 
-
-    # WEBSOCKET EVENT
-    await manager.broadcast(
-
-        new_task.workspace_id,
-
-        {
-            "event":
-                "task_created",
-
-            "task":
-                {
-                    "id":
-                        new_task.id,
-
-                    "title":
-                        new_task.title,
-
-                    "description":
-                        new_task.description,
-
-                    "priority":
-                        new_task.priority,
-
-                    "status":
-                        new_task.status,
-
-                    "workspace_id":
-                        new_task.workspace_id,
-
-                    "assigned_to":
-                        new_task.assigned_to
-                }
-        }
+            f"created task '{task.title}'"
+        )
     )
 
     return new_task
 
 
-# GET WORKSPACE TASKS
+# =========================
+# GET TASKS
+# =========================
+
 @router.get("/{workspace_id}")
-def get_workspace_tasks(
+def get_tasks(
 
     workspace_id: int,
 
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+
+    current_user: User = Depends(
+        get_current_user
+    )
 ):
 
     tasks = db.query(
@@ -143,30 +157,81 @@ def get_workspace_tasks(
 
     ).all()
 
-    return tasks
+
+    result = []
 
 
+    for task in tasks:
+
+        assigned_user = None
+
+
+        if task.assigned_to:
+
+            user = db.query(User).filter(
+                User.id == task.assigned_to
+            ).first()
+
+
+            if user:
+
+                assigned_user = {
+
+                    "id": user.id,
+
+                    "name": user.name
+                }
+
+
+        result.append({
+
+            "id": task.id,
+
+            "title": task.title,
+
+            "description": task.description,
+
+            "priority": task.priority,
+
+            "status": task.status,
+
+            "workspace_id":
+                task.workspace_id,
+
+            "assigned_to":
+                task.assigned_to,
+
+            "assigned_user":
+                assigned_user,
+
+            "due_date":
+                task.due_date
+        })
+
+
+    return result
+
+
+# =========================
 # UPDATE TASK STATUS
+# =========================
+
 @router.put("/{task_id}/status")
-async def update_task_status(
+def update_task_status(
 
     task_id: int,
 
-    task_update: TaskStatusUpdate,
+    data: TaskStatusUpdate,
 
     db: Session = Depends(get_db),
 
-    current_user = Depends(
+    current_user: User = Depends(
         get_current_user
     )
 ):
 
-    task = db.query(
-        Task
-    ).filter(
-
+    task = db.query(Task).filter(
         Task.id == task_id
-
     ).first()
 
 
@@ -180,86 +245,51 @@ async def update_task_status(
         )
 
 
-    # UPDATE STATUS
-    task.status = task_update.status
+    task.status = data.status
 
     db.commit()
 
     db.refresh(task)
 
 
-    # ACTIVITY LOG
-    await log_activity(
+    # ACTIVITY
+    asyncio.create_task(
 
-        db,
+        create_activity(
 
-        task.workspace_id,
+            db,
 
-        current_user.id,
+            task.workspace_id,
 
-        f"{current_user.name} moved '{task.title}' to {task.status}"
-    )
+            current_user.name,
 
-
-    # WEBSOCKET EVENT
-    await manager.broadcast(
-
-        task.workspace_id,
-
-        {
-            "event":
-                "task_updated",
-
-            "task":
-                {
-                    "id":
-                        task.id,
-
-                    "title":
-                        task.title,
-
-                    "description":
-                        task.description,
-
-                    "priority":
-                        task.priority,
-
-                    "status":
-                        task.status,
-
-                    "workspace_id":
-                        task.workspace_id,
-
-                    "assigned_to":
-                        task.assigned_to
-                }
-        }
+            f"moved task '{task.title}' to {task.status}"
+        )
     )
 
     return task
 
 
+# =========================
 # ASSIGN TASK
+# =========================
+
 @router.put("/{task_id}/assign")
-async def assign_task(
+def assign_task(
 
     task_id: int,
 
-    task_assign: TaskAssign,
+    data: AssignTaskSchema,
 
     db: Session = Depends(get_db),
 
-    current_user = Depends(
+    current_user: User = Depends(
         get_current_user
     )
 ):
 
-    task = db.query(
-        Task
-    ).filter(
-
+    task = db.query(Task).filter(
         Task.id == task_id
-
     ).first()
 
 
@@ -273,47 +303,104 @@ async def assign_task(
         )
 
 
-    # ASSIGN USER
-    task.assigned_to = (
-        task_assign.assigned_to
-    )
+    # CHECK MEMBER
+    member = db.query(
+        WorkspaceMember
+    ).filter(
+
+        WorkspaceMember.workspace_id
+        == task.workspace_id,
+
+        WorkspaceMember.user_id
+        == data.assigned_to
+
+    ).first()
+
+
+    if not member:
+
+        raise HTTPException(
+
+            status_code=400,
+
+            detail=
+            "User not in workspace"
+        )
+
+
+    task.assigned_to = data.assigned_to
 
     db.commit()
 
     db.refresh(task)
 
 
-    # ACTIVITY LOG
-    await log_activity(
+    assigned_user = db.query(User).filter(
+        User.id == data.assigned_to
+    ).first()
 
-        db,
 
-        task.workspace_id,
+    # NOTIFICATION
+    asyncio.create_task(
 
-        current_user.id,
+        create_notification(
 
-        f"{current_user.name} assigned task '{task.title}'"
+            db,
+
+            assigned_user.id,
+
+            task.workspace_id,
+
+            "Task Assigned",
+
+            f"You were assigned to '{task.title}'"
+        )
     )
 
 
-    # WEBSOCKET EVENT
-    await manager.broadcast(
+    # ACTIVITY
+    asyncio.create_task(
 
-        task.workspace_id,
+        create_activity(
 
-        {
-            "event":
-                "task_assigned",
+            db,
 
-            "task":
-                {
-                    "id":
-                        task.id,
+            task.workspace_id,
 
-                    "assigned_to":
-                        task.assigned_to
-                }
-        }
+            current_user.name,
+
+            f"assigned '{task.title}' to {assigned_user.name}"
+        )
     )
 
-    return task
+
+    return {
+
+        "id": task.id,
+
+        "title": task.title,
+
+        "description": task.description,
+
+        "priority": task.priority,
+
+        "status": task.status,
+
+        "workspace_id":
+            task.workspace_id,
+
+        "assigned_to":
+            task.assigned_to,
+
+        "assigned_user": {
+
+            "id":
+                assigned_user.id,
+
+            "name":
+                assigned_user.name
+        },
+
+        "due_date":
+            task.due_date
+    }

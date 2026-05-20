@@ -12,16 +12,25 @@ from app.websocket.manager import (
 router = APIRouter()
 
 
-@router.websocket("/ws/{workspace_id}/{user_id}")
+# WORKSPACE SOCKET
+@router.websocket(
+    "/ws/{workspace_id}/{username}"
+)
 async def websocket_endpoint(
+
     websocket: WebSocket,
+
     workspace_id: int,
-    user_id: int
+
+    username: str
 ):
 
     await manager.connect(
+
         workspace_id,
-        user_id,
+
+        username,
+
         websocket
     )
 
@@ -29,28 +38,58 @@ async def websocket_endpoint(
 
         while True:
 
-            data = await websocket.receive_text()
+            data = await websocket.receive_json()
 
-            ## TYPING EVENT
-        if data["event"] == "typing":
 
-            await manager.broadcast_typing(
+            # TYPING EVENT
+            if data.get("event") == "typing":
 
-            workspace_id,
+                await manager.broadcast(
 
-        {
-            "event":
-            "typing",
+                    workspace_id,
 
-            "user":
-            data["user"]
-        }
-    )
+                    {
+                        "event":
+                            "typing",
+
+                        "user":
+                            data.get(
+                                "user"
+                            )
+                    }
+                )
+
+
+            # CHAT MESSAGE
+            elif data.get("event") == "message":
+
+                await manager.broadcast(
+
+                    workspace_id,
+
+                    {
+                        "event":
+                            "message",
+
+                        "user":
+                            data.get(
+                                "user"
+                            ),
+
+                        "message":
+                            data.get(
+                                "message"
+                            )
+                    }
+                )
 
     except WebSocketDisconnect:
 
         await manager.disconnect(
+
             workspace_id,
-            user_id,
+
+            username,
+
             websocket
         )

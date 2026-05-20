@@ -1,10 +1,10 @@
 import {
   createContext,
-  useState,
-  useEffect
+  useEffect,
+  useState
 } from "react"
 
-import api from "../api/axios"
+import axios from "axios"
 
 
 export const AuthContext =
@@ -22,22 +22,72 @@ function AuthProvider({
 
       localStorage.getItem(
         "token"
-      ) || null
+      ) || ""
     )
 
   const [user, setUser] =
     useState(null)
 
 
+  // LOAD USER
+  const loadUser =
+    async () => {
+
+      if (!token) return
+
+      try {
+
+        const response =
+          await axios.get(
+
+            "http://127.0.0.1:8000/auth/me",
+
+            {
+              headers: {
+
+                Authorization:
+                  `Bearer ${token}`
+              }
+            }
+          )
+
+        setUser(
+          response.data
+        )
+
+      } catch (error) {
+
+        console.log(error)
+
+        logout()
+      }
+    }
+
+
+  useEffect(() => {
+
+    loadUser()
+
+  }, [token])
+
+
   // LOGIN
-  const login = (newToken) => {
+  const login = (
+
+    newToken
+
+  ) => {
 
     localStorage.setItem(
+
       "token",
+
       newToken
     )
 
-    setToken(newToken)
+    setToken(
+      newToken
+    )
   }
 
 
@@ -48,55 +98,10 @@ function AuthProvider({
       "token"
     )
 
-    setToken(null)
+    setToken("")
 
     setUser(null)
   }
-
-
-  // LOAD USER
-  useEffect(() => {
-
-    const loadUser =
-      async () => {
-
-        if (!token) return
-
-        try {
-
-          const response =
-            await api.get(
-
-              "/auth/me",
-
-              {
-                headers: {
-
-                  Authorization:
-                    `Bearer ${token}`
-                }
-              }
-            )
-
-          setUser(
-            response.data
-          )
-          localStorage.setItem(
-  "user_name",
-  response.data.name
-)
-
-        } catch (error) {
-
-          console.log(error)
-
-          logout()
-        }
-      }
-
-    loadUser()
-
-  }, [token])
 
 
   return (
@@ -121,4 +126,5 @@ function AuthProvider({
   )
 }
 
-export default AuthProvider
+
+export default AuthProvider``

@@ -9,15 +9,14 @@ import {
 } from "../context/AuthContext"
 
 import {
-  createComment,
-  getComments
+  getComments,
+  createComment
 } from "../api/commentApi"
 
 
-function CommentPanel({
+function CommentsPanel({
 
-  task,
-  socket
+  taskId
 
 }) {
 
@@ -25,11 +24,15 @@ function CommentPanel({
     token
   } = useContext(AuthContext)
 
+
   const [comments, setComments] =
     useState([])
 
-  const [content, setContent] =
+  const [comment, setComment] =
     useState("")
+
+  const [loading, setLoading] =
+    useState(false)
 
 
   // FETCH COMMENTS
@@ -40,83 +43,73 @@ function CommentPanel({
 
         const data =
           await getComments(
+
             token,
-            task.id
+
+            taskId
           )
 
         setComments(data)
 
       } catch (error) {
 
-        console.log(error)
+        console.log(
+          "Comments Error:",
+          error
+        )
       }
     }
 
 
   useEffect(() => {
 
-    fetchComments()
+    if (taskId) {
 
-  }, [])
-
-
-  // SOCKET COMMENT EVENTS
-  useEffect(() => {
-
-    if (!socket) return
-
-    socket.onmessage = (event) => {
-
-      const data = JSON.parse(
-        event.data
-      )
-
-      if (
-        data.event ===
-        "comment_created"
-      ) {
-
-        if (
-          data.comment.task_id ===
-          task.id
-        ) {
-
-          setComments((prev) => [
-
-            ...prev,
-
-            data.comment
-          ])
-        }
-      }
+      fetchComments()
     }
 
-  }, [socket])
+  }, [taskId])
 
 
-  // CREATE COMMENT
-  const handleCreateComment =
-    async () => {
+  // ADD COMMENT
+  const handleAddComment =
+    async (e) => {
 
-      if (!content) return
+      e.preventDefault()
+
+      if (!comment.trim())
+        return
+
 
       try {
+
+        setLoading(true)
 
         await createComment(
 
           token,
 
           {
-            content,
-            task_id: task.id
+            task_id: taskId,
+
+            content: comment
           }
         )
 
-        setContent("")
+        setComment("")
+
+        await fetchComments()
 
       } catch (error) {
 
-        console.log(error)
+        console.log(
+          "Create Comment Error:",
+          error
+        )
+
+      } finally {
+
+        setLoading(false)
       }
     }
 
@@ -124,45 +117,95 @@ function CommentPanel({
   return (
 
     <div className="
-      bg-white
+      bg-white/50
+      backdrop-blur-lg
+      border border-white/20
       rounded-2xl
+      p-4
       shadow-lg
-      p-5
-      mt-4
     ">
 
-      <h2 className="
-        text-xl
-        font-bold
+      {/* HEADER */}
+      <div className="
+        flex
+        justify-between
+        items-center
         mb-4
       ">
 
-        Comments
+        <h2 className="
+          text-lg
+          font-bold
+          text-gray-800
+        ">
 
-      </h2>
+          Comments
+
+        </h2>
 
 
-      {/* COMMENTS */}
+        <span className="
+          text-xs
+          bg-blue-100
+          text-blue-700
+          px-2
+          py-1
+          rounded-full
+          font-semibold
+        ">
+
+          {comments.length}
+
+        </span>
+
+      </div>
+
+
+      {/* COMMENTS LIST */}
       <div className="
         space-y-3
-        max-h-[300px]
+        max-h-52
         overflow-y-auto
+        mb-4
+        pr-1
       ">
 
-        {comments.map((comment) => (
+        {comments.length === 0 && (
+
+          <p className="
+            text-sm
+            text-gray-500
+          ">
+
+            No comments yet
+
+          </p>
+
+        )}
+
+
+        {comments.map((item) => (
 
           <div
-            key={comment.id}
+
+            key={item.id}
+
             className="
-              bg-gray-100
-              p-3
+              bg-white/80
               rounded-xl
+              p-3
+              border
+              border-gray-100
             "
           >
 
-            <p className="text-gray-800">
+            <p className="
+              text-sm
+              text-gray-700
+              wrap-break-words
+            ">
 
-              {comment.content}
+              {item.content}
 
             </p>
 
@@ -174,51 +217,79 @@ function CommentPanel({
 
 
       {/* INPUT */}
-      <div className="
-        flex
-        gap-3
-        mt-5
-      ">
+      <form
+
+        onSubmit={
+          handleAddComment
+        }
+
+        className="
+          flex
+          items-center
+          gap-2
+        "
+      >
 
         <input
+
           type="text"
 
-          value={content}
+          placeholder=
+            "Write comment..."
+
+          value={comment}
 
           onChange={(e) =>
-            setContent(
+            setComment(
               e.target.value
             )
           }
 
-          placeholder="Write comment..."
-
           className="
             flex-1
+            min-w-0
             border
-            p-3
+            border-gray-300
             rounded-xl
+            px-3
+            py-2
+            bg-white/80
+            outline-none
+            focus:ring-2
+            focus:ring-blue-400
           "
         />
 
+
         <button
-          onClick={
-            handleCreateComment
-          }
+
+          type="submit"
+
+          disabled={loading}
+
           className="
-            bg-blue-600
-            text-white
-            px-5
+            px-4
+            py-2
             rounded-xl
+            bg-blue-600
+            hover:bg-blue-700
+            text-white
+            font-semibold
+            transition
+            whitespace-nowrap
           "
         >
-          Send
+
+          {loading
+            ? "..."
+            : "Send"}
+
         </button>
 
-      </div>
+      </form>
 
     </div>
   )
 }
 
-export default CommentPanel
+export default CommentsPanel
