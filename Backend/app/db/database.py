@@ -1,35 +1,19 @@
 from sqlalchemy import create_engine
 
-from sqlalchemy.ext.declarative import (
-    declarative_base
-)
-
 from sqlalchemy.orm import (
+    declarative_base,
     sessionmaker
 )
 
-from dotenv import load_dotenv
 
-import os
-
-
-# LOAD ENV
-load_dotenv()
-
-
-# DATABASE URL
-DATABASE_URL = os.getenv(
-    "DATABASE_URL"
+DATABASE_URL = (
+    "postgresql://postgres:root@localhost:5432/syncsphere"
 )
 
-
-# ENGINE
 engine = create_engine(
     DATABASE_URL
 )
 
-
-# SESSION
 SessionLocal = sessionmaker(
 
     autocommit=False,
@@ -39,12 +23,9 @@ SessionLocal = sessionmaker(
     bind=engine
 )
 
-
-# BASE
 Base = declarative_base()
 
 
-# DATABASE DEPENDENCY
 def get_db():
 
     db = SessionLocal()

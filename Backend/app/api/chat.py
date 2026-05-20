@@ -56,10 +56,7 @@ async def send_message(
         workspace_id=
         chat.workspace_id,
 
-        sender_id=
-        current_user.id,
-
-        sender_name=
+        user=
         current_user.name,
 
         message=
@@ -74,7 +71,7 @@ async def send_message(
 
 
     # REALTIME BROADCAST
-    await manager.broadcast_chat(
+    await manager.broadcast(
 
         chat.workspace_id,
 
@@ -91,7 +88,7 @@ async def send_message(
                 new_message.workspace_id,
 
                 "sender_name":
-                new_message.sender_name,
+                new_message.user,
 
                 "message":
                 new_message.message,

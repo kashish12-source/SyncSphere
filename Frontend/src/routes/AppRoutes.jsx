@@ -1,60 +1,92 @@
 import {
-  BrowserRouter,
   Routes,
-  Route
+  Route,
+  Navigate
 } from "react-router-dom"
 
-import LoginPage from "../pages/LoginPage"
-import RegisterPage from "../pages/RegisterPage"
-import DashboardPage from "../pages/DashboardPage"
-import WorkspacePage from "../pages/WorkspacePage"
+import LoginPage from "../pages/LoginPage.jsx"
 
-import ProtectedRoute from "./ProtectedRoute"
+import RegisterPage from "../pages/RegisterPage.jsx"
+
+import DashboardPage from "../pages/DashboardPage.jsx"
+
+import WorkspacePage from "../pages/WorkspacePage.jsx"
+
+import PrivateRoute from "./ProtectedRoute.jsx"
 
 
 function AppRoutes() {
 
   return (
 
-    <BrowserRouter>
+    <Routes>
 
-      <Routes>
+      {/* LOGIN */}
+      <Route
 
-        <Route
-          path="/login"
-          element={<LoginPage />}
-        />
+        path="/login"
 
-        <Route
-          path="/register"
-          element={<RegisterPage />}
-        />
+        element={<LoginPage />}
 
-        <Route
-          path="/"
-          element={
-            <ProtectedRoute>
+      />
 
-              <DashboardPage />
 
-            </ProtectedRoute>
-          }
-        />
+      {/* REGISTER */}
+      <Route
 
-        <Route
-          path="/workspace/:workspaceId"
-          element={
-            <ProtectedRoute>
+        path="/register"
 
-              <WorkspacePage />
+        element={<RegisterPage />}
 
-            </ProtectedRoute>
-          }
-        />
+      />
 
-      </Routes>
 
-    </BrowserRouter>
+      {/* DASHBOARD */}
+      <Route
+
+        path="/dashboard"
+
+        element={
+
+          <PrivateRoute>
+
+            <DashboardPage />
+
+          </PrivateRoute>
+        }
+
+      />
+
+
+      {/* WORKSPACE */}
+      <Route
+
+        path="/workspace/:workspaceId"
+
+        element={
+
+          <PrivateRoute>
+
+            <WorkspacePage />
+
+          </PrivateRoute>
+        }
+
+      />
+
+
+      {/* DEFAULT */}
+      <Route
+
+        path="*"
+
+        element={
+          <Navigate to="/login" />
+        }
+
+      />
+
+    </Routes>
   )
 }
 

@@ -1,7 +1,7 @@
 import {
   createContext,
-  useEffect,
-  useState
+  useState,
+  useEffect
 } from "react"
 
 import axios from "axios"
@@ -11,7 +11,7 @@ export const AuthContext =
   createContext()
 
 
-function AuthProvider({
+export function AuthProvider({
 
   children
 
@@ -125,6 +125,3 @@ function AuthProvider({
     </AuthContext.Provider>
   )
 }
-
-
-export default AuthProvider``

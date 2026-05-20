@@ -8,7 +8,7 @@ export const getNotifications =
     const response =
       await api.get(
 
-        "/notification",
+        "/notification/",
 
         {
           headers: {
@@ -28,7 +28,6 @@ export const markNotificationRead =
   async (
 
     token,
-
     notificationId
 
   ) => {

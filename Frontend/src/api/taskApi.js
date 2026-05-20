@@ -1,98 +1,101 @@
-import api from "./axios"
+import axios from "axios"
 
 
-export const getWorkspaceTasks = async (
-  token,
-  workspaceId
-) => {
+const API =
+  "http://127.0.0.1:8000"
 
-  const response = await api.get(
 
-    `/tasks/${workspaceId}`,
-
-    {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    }
-  )
-
-  return response.data
-}
-
+// =========================
+// CREATE TASK
+// =========================
 
 export const createTask = async (
+
   token,
   taskData
+
 ) => {
 
-  const response = await api.post(
+  const response =
+    await axios.post(
 
-    "/tasks/create",
+      `${API}/tasks/create`,
 
-    taskData,
-
-    {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    }
-  )
-
-  return response.data
-}
-
-
-// UPDATE TASK STATUS
-export const updateTaskStatus = async (
-  token,
-  taskId,
-  status
-) => {
-
-  const response = await api.put(
-
-    `/tasks/${taskId}/status`,
-
-    {
-      status
-    },
-
-    {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    }
-  )
-  
-
-  return response.data
-}
-export const assignTask =
-  async (
-
-    token,
-    taskId,
-    assignedTo
-
-  ) => {
-
-    const response = await api.put(
-
-      `/tasks/${taskId}/assign`,
-
-      {
-        assigned_to:
-          assignedTo
-      },
+      taskData,
 
       {
         headers: {
+
           Authorization:
             `Bearer ${token}`
         }
       }
     )
+
+  return response.data
+}
+
+
+// =========================
+// GET WORKSPACE TASKS
+// =========================
+
+export const getWorkspaceTasks =
+  async (
+
+    token,
+    workspaceId
+
+  ) => {
+
+    const response =
+      await axios.get(
+
+        `${API}/tasks/${workspaceId}`,
+
+        {
+          headers: {
+
+            Authorization:
+              `Bearer ${token}`
+          }
+        }
+      )
+
+    return response.data
+}
+
+
+// =========================
+// UPDATE TASK STATUS
+// =========================
+
+export const updateTaskStatus =
+  async (
+
+    token,
+    taskId,
+    status
+
+  ) => {
+
+    const response =
+      await axios.put(
+
+        `${API}/tasks/${taskId}/status`,
+
+        {
+          status
+        },
+
+        {
+          headers: {
+
+            Authorization:
+              `Bearer ${token}`
+          }
+        }
+      )
 
     return response.data
 }

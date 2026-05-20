@@ -1,109 +1,282 @@
-import { useState, useContext } from "react"
+import {
+  useState,
+  useContext
+} from "react"
 
-import api from "../api/axios"
+import {
+  Link,
+  useNavigate
+} from "react-router-dom"
 
-import { AuthContext } from "../context/AuthContext"
+import axios from "axios"
 
-import { useNavigate } from "react-router-dom"
+import {
+  AuthContext
+} from "../context/AuthContext"
 
 
 function LoginPage() {
 
-  const navigate = useNavigate()
+  const navigate =
+    useNavigate()
 
-  const { login } = useContext(AuthContext)
 
-  const [formData, setFormData] = useState({
+  const {
+    login
+  } = useContext(AuthContext)
 
-    username: "",
-    password: ""
-  })
 
-  const handleChange = (e) => {
+  const [email, setEmail] =
+    useState("")
 
-    setFormData({
+  const [password,
+    setPassword] =
+      useState("")
 
-      ...formData,
+  const [error, setError] =
+    useState("")
 
-      [e.target.name]: e.target.value
-    })
-  }
 
-  const handleSubmit = async (e) => {
+  // LOGIN
+  const handleLogin =
+    async (e) => {
 
-    e.preventDefault()
+      e.preventDefault()
 
-    try {
+      setError("")
 
-      const response = await api.post(
 
-        "/auth/login",
+      try {
 
-        new URLSearchParams({
+        const formData =
+          new FormData()
 
-          username: formData.username,
-          password: formData.password
-        }),
+        formData.append(
+          "username",
+          email
+        )
 
-        {
-          headers: {
-            "Content-Type":
-              "application/x-www-form-urlencoded"
-          }
-        }
-      )
+        formData.append(
+          "password",
+          password
+        )
 
-      const token =
-        response.data.access_token
 
-      login(token)
+        const response =
+          await axios.post(
 
-      navigate("/")
+            "http://127.0.0.1:8000/auth/login",
 
-    } catch (error) {
+            formData
+          )
 
-      console.log(error)
 
-      alert("Login Failed")
+        // SAVE TOKEN
+        login(
+
+          response.data.access_token
+        )
+
+
+        // GO TO DASHBOARD
+        navigate("/dashboard")
+
+
+      } catch (error) {
+
+        console.log(error)
+
+        setError(
+          "Invalid credentials"
+        )
+      }
     }
-  }
+
 
   return (
 
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+    <div className="
+      min-h-screen
+      flex
+      justify-center
+      items-center
+      bg-linear-to-br
+      from-blue-100
+      via-indigo-100
+      to-slate-200
+    ">
 
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white p-8 rounded-xl shadow-md w-[400px]"
-      >
+      <div className="
+        bg-white/70
+        backdrop-blur-xl
+        rounded-3xl
+        shadow-2xl
+        p-10
+        w-[450px]
+      ">
 
-        <h1 className="text-3xl font-bold mb-6 text-center">
-          Login
+        <h1 className="
+          text-5xl
+          font-extrabold
+          text-blue-700
+          text-center
+          mb-3
+        ">
+
+          SyncSphere
+
         </h1>
 
-        <input
-          type="email"
-          name="username"
-          placeholder="Email"
-          onChange={handleChange}
-          className="w-full border p-3 rounded mb-4"
-        />
 
-        <input
-          type="password"
-          name="password"
-          placeholder="Password"
-          onChange={handleChange}
-          className="w-full border p-3 rounded mb-4"
-        />
+        <p className="
+          text-center
+          text-gray-600
+          mb-10
+        ">
 
-        <button
-          className="w-full bg-blue-600 text-white p-3 rounded"
+          Real-time collaboration platform
+
+        </p>
+
+
+        <form
+
+          onSubmit={handleLogin}
+
+          className="
+            space-y-5
+          "
         >
-          Login
-        </button>
 
-      </form>
+          {/* EMAIL */}
+          <input
+
+            type="email"
+
+            placeholder="Email"
+
+            value={email}
+
+            onChange={(e) =>
+              setEmail(
+                e.target.value
+              )
+            }
+
+            className="
+              w-full
+              p-4
+              rounded-2xl
+              border
+              border-gray-200
+              outline-none
+              focus:ring-2
+              focus:ring-blue-400
+            "
+
+            required
+          />
+
+
+          {/* PASSWORD */}
+          <input
+
+            type="password"
+
+            placeholder="Password"
+
+            value={password}
+
+            onChange={(e) =>
+              setPassword(
+                e.target.value
+              )
+            }
+
+            className="
+              w-full
+              p-4
+              rounded-2xl
+              border
+              border-gray-200
+              outline-none
+              focus:ring-2
+              focus:ring-blue-400
+            "
+
+            required
+          />
+
+
+          {/* ERROR */}
+          {error && (
+
+            <p className="
+              text-red-500
+              text-sm
+            ">
+
+              {error}
+
+            </p>
+
+          )}
+
+
+          {/* BUTTON */}
+          <button
+
+            type="submit"
+
+            className="
+              w-full
+              bg-blue-600
+              hover:bg-blue-700
+              text-white
+              py-4
+              rounded-2xl
+              text-lg
+              font-bold
+              shadow-lg
+              transition
+            "
+          >
+
+            Login
+
+          </button>
+
+        </form>
+
+
+        {/* REGISTER */}
+        <p className="
+          text-center
+          text-gray-600
+          mt-8
+        ">
+
+          Don’t have an account?
+
+          {" "}
+
+          <Link
+
+            to="/register"
+
+            className="
+              text-blue-600
+              font-bold
+            "
+          >
+
+            Register
+
+          </Link>
+
+        </p>
+
+      </div>
 
     </div>
   )

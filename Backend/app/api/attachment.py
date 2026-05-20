@@ -111,7 +111,7 @@ async def upload_attachment(
 
         task.workspace_id,
 
-        current_user.id,
+        current_user.name,
 
         f"{current_user.name} uploaded '{file.filename}'"
     )

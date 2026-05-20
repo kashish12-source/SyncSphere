@@ -2,11 +2,8 @@ from sqlalchemy import (
     Column,
     Integer,
     String,
-    ForeignKey
-)
-
-from sqlalchemy.orm import (
-    relationship
+    ForeignKey,
+    DateTime
 )
 
 from app.db.database import Base
@@ -28,7 +25,10 @@ class Task(Base):
 
     priority = Column(String)
 
-    status = Column(String)
+    status = Column(
+        String,
+        default="todo"
+    )
 
     workspace_id = Column(
         Integer,
@@ -37,13 +37,10 @@ class Task(Base):
 
     assigned_to = Column(
         Integer,
-        ForeignKey("users.id"),
         nullable=True
     )
 
-
-    # RELATIONSHIP
-    workspace = relationship(
-        "Workspace",
-        back_populates="tasks"
+    due_date = Column(
+        DateTime,
+        nullable=True
     )

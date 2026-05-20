@@ -129,13 +129,13 @@ function ChatPanel({
   }, [messages])
 
 
-  // SOCKET EVENTS
   useEffect(() => {
 
-    if (!socket) return
+  if (!socket) return
 
 
-    socket.onmessage = (event) => {
+  const handleMessage =
+    (event) => {
 
       const data =
         JSON.parse(event.data)
@@ -179,9 +179,22 @@ function ChatPanel({
       }
     }
 
-  }, [socket])
+
+  socket.addEventListener(
+    "message",
+    handleMessage
+  )
 
 
+  return () => {
+
+    socket.removeEventListener(
+      "message",
+      handleMessage
+    )
+  }
+
+}, [socket])
   return (
 
     <div className="
@@ -292,7 +305,7 @@ function ChatPanel({
             )
 
             // SEND TYPING EVENT
-            if (socket) {
+            if (socket && socket.readyState === WebSocket.OPEN) {
 
               socket.send(
 

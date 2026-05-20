@@ -4,13 +4,7 @@ from sqlalchemy import (
     String,
     ForeignKey
 )
-
-from sqlalchemy.orm import (
-    relationship
-)
-from app.schemas.member import (
-    AddMemberSchema
-)
+from sqlalchemy.orm import relationship
 
 from app.db.database import Base
 
@@ -25,37 +19,17 @@ class Workspace(Base):
         index=True
     )
 
-    name = Column(
-        String,
-        nullable=False
-    )
+    name = Column(String)
 
-    description = Column(
-        String,
-        nullable=True
-    )
+    description = Column(String)
 
     owner_id = Column(
         Integer,
         ForeignKey("users.id")
     )
 
-
-    # RELATIONSHIPS
     members = relationship(
         "WorkspaceMember",
         back_populates="workspace",
-        cascade="all, delete"
-    )
-
-    tasks = relationship(
-        "Task",
-        back_populates="workspace",
-        cascade="all, delete"
-    )
-
-    activities = relationship(
-        "Activity",
-        back_populates="workspace",
-        cascade="all, delete"
+        cascade="all, delete-orphan"
     )

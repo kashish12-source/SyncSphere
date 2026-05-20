@@ -5,8 +5,7 @@ from sqlalchemy import (
     ForeignKey,
     DateTime
 )
-
-from datetime import datetime
+from sqlalchemy.sql import func
 
 from app.db.database import Base
 
@@ -14,6 +13,7 @@ from app.db.database import Base
 class ChatMessage(Base):
 
     __tablename__ = "chat_messages"
+
 
     id = Column(
         Integer,
@@ -26,20 +26,11 @@ class ChatMessage(Base):
         ForeignKey("workspaces.id")
     )
 
-    sender_id = Column(
-        Integer,
-        ForeignKey("users.id")
-    )
+    user = Column(String)
 
-    sender_name = Column(
-        String
-    )
-
-    message = Column(
-        String
-    )
+    message = Column(String)
 
     created_at = Column(
-        DateTime,
-        default=datetime.utcnow
+        DateTime(timezone=True), 
+        server_default=func.now()
     )

@@ -1,14 +1,10 @@
-from fastapi import (
-    APIRouter,
+from fastapi import(    APIRouter,
     Depends,
-    HTTPException
+    HTTPException,
+    BackgroundTasks
 )
 
 from sqlalchemy.orm import Session
-
-from pydantic import BaseModel
-
-from typing import Optional
 
 from app.db.database import (
     get_db
@@ -21,21 +17,20 @@ from app.models.task import (
 from app.models.user import (
     User
 )
+from app.models.activity import (
+    Activity
+)
 
-from app.models.workspace_member import (
-    WorkspaceMember
+from app.schemas.task import (
+    TaskCreate
 )
 
 from app.auth.jwt_handler import (
     get_current_user
 )
 
-from app.services.activity_service import (
-    create_activity
-)
-
-from app.services.notification_service import (
-    create_notification
+from app.websocket.manager import (
+    manager
 )
 
 import asyncio
@@ -50,33 +45,6 @@ router = APIRouter(
 
 
 # =========================
-# SCHEMAS
-# =========================
-
-class TaskCreate(BaseModel):
-
-    title: str
-
-    description: str
-
-    priority: str
-
-    workspace_id: int
-
-    due_date: Optional[str] = None
-
-
-class TaskStatusUpdate(BaseModel):
-
-    status: str
-
-
-class AssignTaskSchema(BaseModel):
-
-    assigned_to: int
-
-
-# =========================
 # CREATE TASK
 # =========================
 
@@ -85,6 +53,8 @@ def create_task(
 
     task: TaskCreate,
 
+    background_tasks: BackgroundTasks,
+
     db: Session = Depends(get_db),
 
     current_user: User = Depends(
@@ -92,44 +62,101 @@ def create_task(
     )
 ):
 
-    new_task = Task(
+    try:
 
-        title=task.title,
+        new_task = Task(
 
-        description=task.description,
+            title=task.title,
 
-        priority=task.priority,
+            description=task.description,
 
-        status="todo",
+            priority=task.priority,
 
-        workspace_id=task.workspace_id,
+            workspace_id=task.workspace_id,
 
-        due_date=task.due_date
-    )
+            assigned_to=task.assigned_to,
 
-    db.add(new_task)
+            status="todo"
+        )
 
-    db.commit()
+        db.add(new_task)
 
-    db.refresh(new_task)
+        db.commit()
+
+        db.refresh(new_task)
+                # SAVE ACTIVITY
+        activity = Activity(
+
+            workspace_id=
+                task.workspace_id,
+
+            user=
+                current_user.name,
+
+            action=
+                f"created task '{new_task.title}'"
+        )
+
+        db.add(activity)
+
+        db.commit()
 
 
-    # ACTIVITY
-    asyncio.create_task(
+        # REALTIME EVENT
+        background_tasks.add_task(
 
-        create_activity(
-
-            db,
+            manager.broadcast,
 
             task.workspace_id,
 
-            current_user.name,
+            {
+                    "event":
+                    "task_created",
 
-            f"created task '{task.title}'"
+                    "task": {
+
+                        "id":
+                            new_task.id,
+
+                        "title":
+                            new_task.title,
+
+                        "description":
+                            new_task.description,
+
+                        "priority":
+                            new_task.priority,
+
+                        "status":
+                            new_task.status,
+
+                        "workspace_id":
+                            new_task.workspace_id,
+
+                        "assigned_to":
+                            new_task.assigned_to,
+
+                        "due_date":
+                            new_task.due_date.isoformat()
+
+                            if new_task.due_date
+                            else None
+                    }
+                }
+            )
+
+        return new_task
+
+    except Exception as e:
+
+        print("CREATE TASK ERROR:", e)
+
+        raise HTTPException(
+
+            status_code=500,
+
+            detail=str(e)
         )
-    )
-
-    return new_task
 
 
 # =========================
@@ -148,68 +175,71 @@ def get_tasks(
     )
 ):
 
-    tasks = db.query(
-        Task
-    ).filter(
+    try:
 
-        Task.workspace_id
-        == workspace_id
+        tasks = db.query(Task).filter(
 
-    ).all()
+            Task.workspace_id
+            == workspace_id
 
+        ).all()
 
-    result = []
+        result = []
 
+        for task in tasks:
 
-    for task in tasks:
+            assigned_user = None
 
-        assigned_user = None
+            if task.assigned_to:
 
+                user = db.query(User).filter(
 
-        if task.assigned_to:
+                    User.id == task.assigned_to
 
-            user = db.query(User).filter(
-                User.id == task.assigned_to
-            ).first()
+                ).first()
 
+                if user:
 
-            if user:
+                    assigned_user = {
 
-                assigned_user = {
+                        "id": user.id,
 
-                    "id": user.id,
+                        "name": user.name
+                    }
 
-                    "name": user.name
-                }
+            result.append({
 
+                "id": task.id,
 
-        result.append({
+                "title": task.title,
 
-            "id": task.id,
+                "description": task.description,
 
-            "title": task.title,
+                "priority": task.priority,
 
-            "description": task.description,
+                "status": task.status,
 
-            "priority": task.priority,
+                "workspace_id": task.workspace_id,
 
-            "status": task.status,
+                "assigned_to": task.assigned_to,
 
-            "workspace_id":
-                task.workspace_id,
+                "assigned_user": assigned_user,
 
-            "assigned_to":
-                task.assigned_to,
+                "due_date": task.due_date
+            })
 
-            "assigned_user":
-                assigned_user,
+        return result
 
-            "due_date":
-                task.due_date
-        })
+    except Exception as e:
 
+        print("GET TASKS ERROR:", e)
 
-    return result
+        raise HTTPException(
+
+            status_code=500,
+
+            detail=str(e)
+        )
 
 
 # =========================
@@ -221,7 +251,9 @@ def update_task_status(
 
     task_id: int,
 
-    data: TaskStatusUpdate,
+    data: dict,
+
+    background_tasks: BackgroundTasks,
 
     db: Session = Depends(get_db),
 
@@ -230,177 +262,106 @@ def update_task_status(
     )
 ):
 
-    task = db.query(Task).filter(
-        Task.id == task_id
-    ).first()
+    try:
+
+        task = db.query(Task).filter(
+
+            Task.id == task_id
+
+        ).first()
 
 
-    if not task:
+        if not task:
+
+            raise HTTPException(
+
+                status_code=404,
+
+                detail="Task not found"
+            )
+
+
+        task.status = data["status"]
+        db.commit()
+
+        db.refresh(task)
+                # SAVE ACTIVITY
+        activity = Activity(
+
+            workspace_id=
+                task.workspace_id,
+
+            user=
+                current_user.name,
+
+            action=
+                f"moved '{task.title}' to {task.status}"
+        )
+
+        db.add(activity)
+
+        db.commit()
+                # REALTIME ACTIVITY EVENT
+        background_tasks.add_task(
+
+            manager.broadcast,
+
+            task.workspace_id,
+
+            {
+                    "event":
+                    "activity",
+
+                    "activity": {
+
+                        "id":
+                            activity.id,
+
+                        "user":
+                            activity.user,
+
+                        "action":
+                            activity.action
+                    }
+                }
+            )
+
+
+        # REALTIME EVENT
+        background_tasks.add_task(
+
+            manager.broadcast,
+
+            task.workspace_id,
+
+            {
+                    "event":
+                    "task_updated",
+
+                    "task": {
+
+                        "id":
+                            task.id,
+
+                        "status":
+                            task.status
+                    }
+                }
+            )
+
+
+        return task
+
+    except Exception as e:
+
+        print(
+            "UPDATE TASK STATUS ERROR:",
+            e
+        )
 
         raise HTTPException(
 
-            status_code=404,
+            status_code=500,
 
-            detail="Task not found"
+            detail=str(e)
         )
-
-
-    task.status = data.status
-
-    db.commit()
-
-    db.refresh(task)
-
-
-    # ACTIVITY
-    asyncio.create_task(
-
-        create_activity(
-
-            db,
-
-            task.workspace_id,
-
-            current_user.name,
-
-            f"moved task '{task.title}' to {task.status}"
-        )
-    )
-
-    return task
-
-
-# =========================
-# ASSIGN TASK
-# =========================
-
-@router.put("/{task_id}/assign")
-def assign_task(
-
-    task_id: int,
-
-    data: AssignTaskSchema,
-
-    db: Session = Depends(get_db),
-
-    current_user: User = Depends(
-        get_current_user
-    )
-):
-
-    task = db.query(Task).filter(
-        Task.id == task_id
-    ).first()
-
-
-    if not task:
-
-        raise HTTPException(
-
-            status_code=404,
-
-            detail="Task not found"
-        )
-
-
-    # CHECK MEMBER
-    member = db.query(
-        WorkspaceMember
-    ).filter(
-
-        WorkspaceMember.workspace_id
-        == task.workspace_id,
-
-        WorkspaceMember.user_id
-        == data.assigned_to
-
-    ).first()
-
-
-    if not member:
-
-        raise HTTPException(
-
-            status_code=400,
-
-            detail=
-            "User not in workspace"
-        )
-
-
-    task.assigned_to = data.assigned_to
-
-    db.commit()
-
-    db.refresh(task)
-
-
-    assigned_user = db.query(User).filter(
-        User.id == data.assigned_to
-    ).first()
-
-
-    # NOTIFICATION
-    asyncio.create_task(
-
-        create_notification(
-
-            db,
-
-            assigned_user.id,
-
-            task.workspace_id,
-
-            "Task Assigned",
-
-            f"You were assigned to '{task.title}'"
-        )
-    )
-
-
-    # ACTIVITY
-    asyncio.create_task(
-
-        create_activity(
-
-            db,
-
-            task.workspace_id,
-
-            current_user.name,
-
-            f"assigned '{task.title}' to {assigned_user.name}"
-        )
-    )
-
-
-    return {
-
-        "id": task.id,
-
-        "title": task.title,
-
-        "description": task.description,
-
-        "priority": task.priority,
-
-        "status": task.status,
-
-        "workspace_id":
-            task.workspace_id,
-
-        "assigned_to":
-            task.assigned_to,
-
-        "assigned_user": {
-
-            "id":
-                assigned_user.id,
-
-            "name":
-                assigned_user.name
-        },
-
-        "due_date":
-            task.due_date
-    }

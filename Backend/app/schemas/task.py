@@ -3,10 +3,6 @@ from pydantic import BaseModel
 from typing import Optional
 
 
-# =========================
-# CREATE TASK
-# =========================
-
 class TaskCreate(BaseModel):
 
     title: str
@@ -18,51 +14,3 @@ class TaskCreate(BaseModel):
     workspace_id: int
 
     assigned_to: Optional[int] = None
-
-    due_date: Optional[str] = None
-
-
-# =========================
-# UPDATE STATUS
-# =========================
-
-class TaskStatusUpdate(BaseModel):
-
-    status: str
-
-
-# =========================
-# ASSIGN TASK
-# =========================
-
-class TaskAssign(BaseModel):
-
-    assigned_to: int
-
-
-# =========================
-# RESPONSE
-# =========================
-
-class TaskResponse(BaseModel):
-
-    id: int
-
-    title: str
-
-    description: str
-
-    priority: str
-
-    status: str
-
-    workspace_id: int
-
-    assigned_to: Optional[int]
-
-    due_date: Optional[str] = None
-
-
-    class Config:
-
-        from_attributes = True

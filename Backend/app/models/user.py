@@ -3,10 +3,7 @@ from sqlalchemy import (
     Integer,
     String
 )
-
-from sqlalchemy.orm import (
-    relationship
-)
+from sqlalchemy.orm import relationship
 
 from app.db.database import Base
 
@@ -21,26 +18,18 @@ class User(Base):
         index=True
     )
 
-    name = Column(
-        String,
-        nullable=False
-    )
+    name = Column(String)
 
     email = Column(
         String,
         unique=True,
-        nullable=False
+        index=True
     )
 
-    password = Column(
-        String,
-        nullable=False
-    )
+    password = Column(String)
 
-
-    # RELATIONSHIPS
     memberships = relationship(
         "WorkspaceMember",
         back_populates="user",
-        cascade="all, delete"
+        cascade="all, delete-orphan"
     )

@@ -10,21 +10,18 @@ from fastapi.security import (
 
 from sqlalchemy.orm import Session
 
+from passlib.context import (
+    CryptContext
+)
+
+from pydantic import BaseModel
+
 from app.db.database import (
     get_db
 )
 
 from app.models.user import (
     User
-)
-
-from app.schemas.user_schemas import (
-    UserCreate
-)
-
-from app.auth.hashing import (
-    hash_password,
-    verify_password
 )
 
 from app.auth.jwt_handler import (
@@ -34,138 +31,193 @@ from app.auth.jwt_handler import (
 
 
 router = APIRouter(
+
     prefix="/auth",
-    tags=["Authentication"]
+
+    tags=["Auth"]
 )
 
 
-# REGISTER
-@router.post("/register")
-def register_user(
+pwd_context = CryptContext(
 
-    user: UserCreate,
+    schemes=["bcrypt"],
+
+    deprecated="auto"
+)
+
+
+# =========================
+# SCHEMA
+# =========================
+
+class RegisterSchema(BaseModel):
+
+    name: str
+
+    email: str
+
+    password: str
+
+
+# =========================
+# REGISTER
+# =========================
+
+@router.post("/register")
+def register(
+
+    data: RegisterSchema,
 
     db: Session = Depends(get_db)
 ):
 
-    existing_user = db.query(
-        User
-    ).filter(
+    try:
 
-        User.email == user.email
+        existing_user = db.query(
+            User
+        ).filter(
 
-    ).first()
+            User.email == data.email
+
+        ).first()
 
 
-    if existing_user:
+        if existing_user:
 
-        raise HTTPException(
+            raise HTTPException(
 
-            status_code=400,
+                status_code=400,
 
-            detail=
-            "Email already registered"
+                detail="Email already exists"
+            )
+
+
+        hashed_password = pwd_context.hash(
+            data.password
         )
 
 
-    hashed_password = hash_password(
-        user.password
-    )
+        new_user = User(
+
+            name=data.name,
+
+            email=data.email,
+
+            password=hashed_password
+        )
 
 
-    new_user = User(
+        db.add(new_user)
 
-        name=user.name,
+        db.commit()
 
-        email=user.email,
-
-        password=hashed_password
-    )
-
-    db.add(new_user)
-
-    db.commit()
-
-    db.refresh(new_user)
+        db.refresh(new_user)
 
 
-    return {
-        "message":
-        "User registered successfully"
-    }
+        return {
+
+            "message":
+            "User registered successfully"
+        }
+
+    except Exception as e:
+
+        print("REGISTER ERROR:", e)
+
+        raise HTTPException(
+
+            status_code=500,
+
+            detail=str(e)
+        )
 
 
+# =========================
 # LOGIN
+# =========================
+
 @router.post("/login")
-def login_user(
+def login(
 
     form_data:
-    OAuth2PasswordRequestForm
-    = Depends(),
+    OAuth2PasswordRequestForm = Depends(),
 
     db: Session = Depends(get_db)
 ):
 
-    existing_user = db.query(
-        User
-    ).filter(
+    try:
 
-        User.email ==
-        form_data.username
+        user = db.query(User).filter(
 
-    ).first()
+            User.email
+            == form_data.username
+
+        ).first()
 
 
-    if not existing_user:
+        if not user:
 
-        raise HTTPException(
+            raise HTTPException(
 
-            status_code=404,
+                status_code=401,
 
-            detail="Invalid email"
+                detail="Invalid credentials"
+            )
+
+
+        valid_password = pwd_context.verify(
+
+            form_data.password,
+
+            user.password
         )
 
 
-    valid_password = verify_password(
+        if not valid_password:
 
-        form_data.password,
+            raise HTTPException(
 
-        existing_user.password
-    )
+                status_code=401,
+
+                detail="Invalid credentials"
+            )
 
 
-    if not valid_password:
+        token = create_access_token(
 
-        raise HTTPException(
-
-            status_code=401,
-
-            detail="Invalid password"
+            data={
+                "sub": user.email
+            }
         )
 
 
-    access_token = create_access_token(
+        return {
 
-        data={
-            "sub":
-            existing_user.email
+            "access_token":
+                token,
+
+            "token_type":
+                "bearer"
         }
-    )
+
+    except Exception as e:
+
+        print("LOGIN ERROR:", e)
+
+        raise HTTPException(
+
+            status_code=500,
+
+            detail=str(e)
+        )
 
 
-    return {
-
-        "access_token":
-        access_token,
-
-        "token_type":
-        "bearer"
-    }
-
-
+# =========================
 # CURRENT USER
+# =========================
+
 @router.get("/me")
-def get_logged_in_user(
+def get_me(
 
     current_user: User = Depends(
         get_current_user
@@ -175,11 +227,11 @@ def get_logged_in_user(
     return {
 
         "id":
-        current_user.id,
+            current_user.id,
 
         "name":
-        current_user.name,
+            current_user.name,
 
         "email":
-        current_user.email
+            current_user.email
     }

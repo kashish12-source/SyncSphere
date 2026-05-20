@@ -15,7 +15,7 @@ async def log_activity(
 
     workspace_id: int,
 
-    user_id: int,
+    user: str,
 
     action: str
 ):
@@ -26,7 +26,7 @@ async def log_activity(
 
         workspace_id=workspace_id,
 
-        user_id=user_id
+        user=user
     )
 
     db.add(activity)
@@ -56,8 +56,8 @@ async def log_activity(
                     "workspace_id":
                         activity.workspace_id,
 
-                    "user_id":
-                        activity.user_id
+                    "user":
+                        activity.user
                 }
         }
     )

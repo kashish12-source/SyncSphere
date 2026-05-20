@@ -9,7 +9,9 @@ import {
 } from "react-router-dom"
 
 import {
-  DndContext
+  DndContext,
+  closestCorners
+
 } from "@dnd-kit/core"
 
 import {
@@ -446,6 +448,9 @@ useEffect(() => {
 
           {/* TASK BOARD */}
           <DndContext
+             collisionDetection={
+    closestCorners
+  }
             onDragEnd={
               handleDragEnd
             }

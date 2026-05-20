@@ -4,36 +4,20 @@ from fastapi.middleware.cors import (
     CORSMiddleware
 )
 
-from app.models.chat_message import ChatMessage
-
-from fastapi.staticfiles import (
-    StaticFiles
-)
-
 from app.db.database import (
-    engine,
-    Base
+    Base,
+    engine
 )
 
-from app.api.chat import (
-    router as chat_router
-)
-
-# IMPORT ALL MODELS
+# MODELS
 from app.models.user import User
 from app.models.workspace import Workspace
 from app.models.task import Task
-from app.models.workspace_member import WorkspaceMember
-from app.models.notification import Notification
-from app.models.comment import Comment
-from app.models.activity import Activity
-from app.models.attachment import Attachment
 
-# IMPORT ROUTERS
+# ROUTERS
 from app.api.auth import (
-    router as auth_route
+    router as auth_router
 )
-
 
 from app.api.workspace import (
     router as workspace_router
@@ -43,12 +27,12 @@ from app.api.task import (
     router as task_router
 )
 
-from app.api.websocket import (
-    router as websocket_router
+from app.api.chat import (
+    router as chat_router
 )
 
-from app.api.notification import (
-    router as notification_router
+from app.api.attachment import (
+    router as attachment_router
 )
 
 from app.api.comment import (
@@ -59,59 +43,66 @@ from app.api.activity import (
     router as activity_router
 )
 
-from app.api.attachment import (
-    router as attachment_router
-)
+# OPTIONAL ROUTERS
+try:
+
+    from app.api.notification import (
+        router as notification_router
+    )
+
+except:
+
+    notification_router = None
 
 
-# CREATE DATABASE TABLES
-Base.metadata.create_all(
-    bind=engine
-)
+# WEBSOCKET
+try:
+
+    from app.websocket.websocket import (
+        router as websocket_router
+    )
+
+except:
+
+    websocket_router = None
 
 
-# FASTAPI APP
-app = FastAPI(
-
-    title="SyncSphere API",
-
-    version="1.0.0"
-)
+app = FastAPI()
 
 
-# STATIC FILES
-app.mount(
-
-    "/uploads",
-
-    StaticFiles(
-        directory="uploads"
-    ),
-
-    name="uploads"
-)
-
-
+# =========================
 # CORS
+# =========================
+
 app.add_middleware(
 
     CORSMiddleware,
 
-    allow_origins=[
-        "http://localhost:5173"
-    ],
+    allow_origins=["*"],
 
     allow_credentials=True,
 
     allow_methods=["*"],
 
-    allow_headers=["*"],
+    allow_headers=["*"]
 )
 
 
-# REGISTER ROUTERS
+# =========================
+# CREATE TABLES
+# =========================
+
+Base.metadata.create_all(
+    bind=engine
+)
+
+
+# =========================
+# ROUTERS
+# =========================
+
 app.include_router(
-    auth_route
+    auth_router
 )
 
 app.include_router(
@@ -122,14 +113,12 @@ app.include_router(
     task_router
 )
 
-app.include_router(chat_router)
-
 app.include_router(
-    websocket_router
+    chat_router
 )
 
 app.include_router(
-    notification_router
+    attachment_router
 )
 
 app.include_router(
@@ -140,17 +129,30 @@ app.include_router(
     activity_router
 )
 
-app.include_router(
-    attachment_router
-)
+
+if notification_router:
+
+    app.include_router(
+        notification_router
+    )
 
 
-# ROOT ROUTE
+if websocket_router:
+
+    app.include_router(
+        websocket_router
+    )
+
+
+# =========================
+# ROOT
+# =========================
+
 @app.get("/")
-def read_root():
+def root():
 
     return {
 
         "message":
-            "Welcome to SyncSphere API"
+        "SyncSphere Backend Running"
     }

@@ -5,16 +5,13 @@ from sqlalchemy import (
     ForeignKey
 )
 
-from sqlalchemy.orm import (
-    relationship
-)
-
 from app.db.database import Base
 
 
 class Activity(Base):
 
     __tablename__ = "activities"
+
 
     id = Column(
         Integer,
@@ -27,13 +24,6 @@ class Activity(Base):
         ForeignKey("workspaces.id")
     )
 
-    user_id = Column(Integer)
+    user = Column(String)
 
     action = Column(String)
-
-
-    # RELATIONSHIP
-    workspace = relationship(
-        "Workspace",
-        back_populates="activities"
-    )
